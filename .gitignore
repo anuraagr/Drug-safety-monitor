@@ -27,3 +27,6 @@ fix_output.txt
 # Large generated files (keep sample_data tracked via LFS or exclude)
 # sample_data/adverse_events_portfolio.json
 # sample_data/ingest_commands.kql
+
+# Demo script (local only)
+docs/DEMO_SCRIPT.md
