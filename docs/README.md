@@ -13,7 +13,7 @@ A polished, production-grade demonstration of adverse-event signal detection bui
 | **Regulatory-critical workflow** | Targets *pharmacovigilance operations* — a core regulatory requirement for every pharma & biotech company |
 | **Real FDA data** | openFDA FAERS is public, legitimate FDA data (not synthetic). Covers 2004–2026, updated quarterly |
 | **Multi-drug portfolio view** | Pre-built profiles for cardiology, oncology, immunology, and mixed portfolios — or define your own |
-| **End-to-end Fabric** | Streaming ingestion → spike detection → real-time dashboard → alert escalation — all in one workspace |
+| **End-to-end Fabric** | Notebook ingestion → spike detection → real-time dashboard → alert escalation — all in one workspace |
 | **Live demo mode** | Replay events with color-coded console output for screen-sharing during customer presentations |
 | **Composite risk scoring** | `RiskScoreCard()` function produces a weighted 0-100 risk score combining seriousness, mortality, velocity, and reaction breadth |
 | **Head-to-head drug comparison** | `DrugComparisonReport()` function for side-by-side safety profile analysis during live Q&A |
@@ -30,15 +30,15 @@ A polished, production-grade demonstration of adverse-event signal detection bui
                                          │
                     ┌────────────────────┬┴─────────────────────┐
                     ▼                    ▼                      ▼
-          fetch_fda_portfolio.py   ingest_faers_stream.py   live_demo.py
-          (batch → NDJSON file)   (stream → Eventstream)   (replay → console)
-                    │                    │
-                    ▼                    ▼
-          load_to_eventhouse.py    Fabric Eventstream
-          (Kusto SDK direct)       (Custom Endpoint)
-                    │                    │
-                    └─────────┬──────────┘
-                              ▼
+      Fabric Notebook ★        ingest_faers_stream.py    live_demo.py
+      (primary method)         (stream → Eventstream)    (replay → console)
+          │                          │
+          ▼                          ▼
+      Kusto SDK direct         Fabric Eventstream
+      (built-in auth)          (Custom Endpoint)
+          │                          │
+          └────────────┬─────────────┘
+                       ▼
                ┌──────────────────────────────┐
                │     Eventhouse (KQL DB)      │
                │     Drug-safety-signal-eh    │
@@ -159,12 +159,19 @@ Run each file in `scripts/setup_steps/` sequentially (STEP1 → STEP12):
 
 ### 5. Load data into Eventhouse
 
-**Option A — Fabric portal upload (simplest):**
+**Option A — Fabric Notebook (recommended, used in this demo):**
+1. Upload `notebooks/fabric_data_ingestion.ipynb` to your Fabric workspace
+2. Update the **Configuration** cell with your Eventhouse cluster URI and database name
+3. Set `DATA_SOURCE = "openfda"` to fetch live FDA data (or `"lakehouse"` / `"synthetic"`)
+4. **Run All Cells** — ingests data directly into the Eventhouse with progress tracking
+5. The notebook handles authentication automatically via Fabric's built-in credentials
+
+**Option B — Fabric portal upload:**
 1. KQL database → **Get data** → **Local file**
 2. Select `sample_data/fda_portfolio_mixed.ndjson`
 3. Target table: `AdverseEvents`, mapping: `AdverseEvents_JsonMapping`
 
-**Option B — Direct Kusto SDK:**
+**Option C — Direct Kusto SDK (local):**
 ```bash
 pip install azure-kusto-data azure-kusto-ingest azure-identity
 python scripts/load_to_eventhouse.py \
@@ -173,7 +180,7 @@ python scripts/load_to_eventhouse.py \
     --auth interactive
 ```
 
-**Option C — Eventstream (real-time path):**
+**Option D — Eventstream (real-time path):**
 1. Create Eventstream → add Custom Endpoint source → copy connection string
 2. Add Eventhouse destination → select `AdverseEvents` with JSON mapping
 3. Update `docs/config.json` → `fabric_eventhub.connection_string`
