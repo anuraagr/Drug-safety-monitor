@@ -2,7 +2,7 @@
 
 **Microsoft Fabric Real-Time Intelligence — Pharmacovigilance Demo**
 
-A production-grade demonstration of adverse-event signal detection built on Microsoft Fabric Real-Time Intelligence. Ingests real FDA FAERS data across a multi-drug portfolio, detects safety-signal spikes with KQL analytics, surfaces results in a **14-tile Signal Room dashboard**, and escalates critical findings via Activator alerts.
+Demo of adverse-event signal detection built on Microsoft Fabric Real-Time Intelligence. Ingests real FDA FAERS data across a multi-drug portfolio, detects safety-signal spikes with KQL analytics, surfaces results in a **14-tile Signal Room dashboard**, and escalates critical findings via Activator alerts.
 
 ---
 
