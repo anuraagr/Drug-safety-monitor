@@ -1,0 +1,4 @@
+// STEP 4: Enable streaming ingestion
+// Select ALL text below and click Run
+
+.alter table AdverseEvents policy streamingingestion enable

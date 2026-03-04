@@ -1,0 +1,384 @@
+╔══════════════════════════════════════════════════════════════╗
+║   Drug Safety Signal Monitor — Portfolio Data Report        ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Generated:  2026-03-02T21:28:16.539661+00:00
+  Profile:    mixed
+  Events:     2,000
+
+── Overall Statistics ──────────────────────────────────────────
+
+  Total events:          2,000
+  Serious events:        1,607 (80.3%)
+  Deaths:                239 (11.9%)
+  Hospitalizations:      802 (40.1%)
+  Life-threatening:      108 (5.4%)
+  Unique drugs:          311
+  Unique reactions:      788
+  Countries:             61
+
+── 7-Day Window (for Signal Detection) ────────────────────────
+
+  Events in last 7d:     854
+  Serious in last 7d:    692
+
+── Drug Breakdown ─────────────────────────────────────────────
+
+  Drug                         Count   Serious   Deaths    Hosp
+  ────────────────────────  ────────  ────────  ───────  ──────
+  ABATACEPT                        9         9        0       2
+  ABEMACICLIB                      1         0        0       0
+  ABIRATERONE ACETATE              1         1        0       1
+  ACALABRUTINIB                    2         2        1       1
+  ACETAMINOPHEN                    6         5        1       1
+  ACETAMINOPHEN, ASPIRIN, AND CAFFEINE         1         0        0       0
+  ACETAMINOPHEN, ASPRIN, CAFFEINE         1         1        0       1
+  ACETAMINOPHEN, GUAIFENESIN, AND PHENYLEPHRINE HYDROCHLORIDE         1         0        0       0
+  ADALIMUMAB                     218       211       11      78
+  ADAPALENE                        1         0        0       0
+  ALCOHOL                          1         1        1       1
+  ALENDRONATE SODIUM               1         0        0       0
+  ALIROCUMAB                       2         1        0       0
+  ALPELISIB                        1         1        0       0
+  ALTEPLASE                        1         1        0       0
+  AMBRISENTAN                      8         8        1       3
+  AMLODIPINE                       1         1        0       0
+  AMOXICILLIN                      2         2        0       1
+  ANAKINRA                         1         1        0       0
+  ANTI-THYMOCYTE GLOBULIN (RABBIT)         1         1        0       1
+  APIXABAN                         6         4        0       4
+  APREMILAST                      27         5        1       2
+  ASPIRIN                         10        10        2       5
+  ATENOLOL                         1         1        0       1
+  ATEZOLIZUMAB                     4         4        0       3
+  ATORVASTATIN CALCIUM             2         2        0       1
+  AXITINIB                         6         5        1       2
+  AZACITIDINE                      3         3        0       1
+  AZATHIOPRINE                     1         1        0       0
+  BACILLUS CALMETTE-GUERIN         1         1        0       1
+  BAYER ASPIRIN EXTRA STRENGTH         1         1        1       1
+  BELIMUMAB                        1         1        0       1
+  BENRALIZUMAB                     1         0        0       0
+  BENZALKONIUM CHLORIDE            1         1        0       0
+  BEVACIZUMAB                      1         1        0       0
+  BICTEGRAVIR SODIUM, EMTRICITABINE, AND TENOFOVIR ALAFENAMIDE FUMARATE         1         1        0       1
+  BINIMETINIB                      3         1        0       1
+  BISOPROLOL FUMARATE              6         6        0       5
+  BORTEZOMIB                       2         2        0       1
+  BOSENTAN                        11        10        2       9
+  BUDESONIDE AND FORMOTEROL FUMARATE DIHYDRATE         1         0        0       0
+  BUPIVACAINE                      1         1        1       0
+  BUPIVACAINE HYDROCHLORIDE         2         2        0       2
+  CABOZANTINIB                     2         2        0       2
+  CALCIUM CARBONATE                1         1        0       0
+  CANAGLIFLOZIN                    1         1        0       1
+  CANAGLIFLOZIN AND METFORMIN HYDROCHLORIDE         1         0        0       0
+  CANAKINUMAB                      3         3        0       2
+  CANDESARTAN                      3         3        0       3
+  CAPTOPRIL                        1         1        0       1
+  CARBIDOPA AND LEVODOPA           2         2        1       0
+  CARBOPLATIN                     11        10        4       7
+  CARVEDILOL                       1         0        0       0
+  CEFAZOLIN SODIUM                 1         1        0       0
+  CEFTAZIDIME                      2         2        0       2
+  CEFTRIAXONE                      1         1        0       1
+  CEFUROXIME                       1         1        0       1
+  CELECOXIB                        2         2        0       0
+  CEPHALEXIN                       1         1        0       1
+  CERTOLIZUMAB PEGOL              28        11        0       1
+  CETIRIZINE HYDROCHLORIDE         1         0        0       0
+  CHLORAMBUCIL                     1         1        0       1
+  CHOLESTYRAMINE                   1         0        0       0
+  CIPROFLOXACIN                    4         4        0       3
+  CISPLATIN                       12        12        8       2
+  CITALOPRAM                       1         1        0       1
+  CLARITHROMYCIN                   3         3        0       2
+  CLONAZEPAM                       1         1        0       1
+  CLONIDINE                        2         0        0       0
+  CLOPIDOGREL                      8         8        0       6
+  CLOPIDOGREL BISULFATE            1         1        0       0
+  CONJUGATED ESTROGENS             1         0        0       0
+  CORTISONE ACETATE                1         1        0       0
+  CYCLOPHOSPHAMIDE FOR INJECTION         3         3        0       1
+  DABIGATRAN ETEXILATE MESYLATE         2         1        0       1
+  DAPAGLIFLOZIN                    1         1        0       1
+  DAPAGLIFLOZIN AND METFORMIN HYDROCHLORIDE         1         0        0       0
+  DAPSONE GEL, 5%                  1         1        0       1
+  DARATUMUMAB                      1         1        0       1
+  DARBEPOETIN ALFA                 1         1        0       0
+  DENOSUMAB                        3         2        0       1
+  DESIPRAMINE                      1         1        1       1
+  DESOXIMETASONE                   2         2        0       0
+  DEXAMETHASONE                    5         5        0       2
+  DEXLANSOPRAZOLE                  2         2        0       0
+  DICLOFENAC                       1         1        0       1
+  DICLOFENAC SODIUM                3         3        0       0
+  DICLOFENAC SODIUM AND MISOPROSTOL         1         1        0       0
+  DIMETHYL FUMARATE                5         3        0       3
+  DIVALPROEX SODIUM                1         1        0       1
+  DOCETAXEL                       12        10        9       0
+  DOFETILIDE                       1         1        0       1
+  DOXORUBICIN HYDROCHLORIDE         1         1        1       0
+  DOXYCYCLINE                      5         4        0       2
+  DOXYCYCLINE MONOHYDRATE          1         1        0       1
+  DROXIDOPA                        5         1        1       0
+  DULAGLUTIDE                      7         1        0       1
+  DULOXETINE HYDROCHLORIDE         4         4        0       1
+  DUPILUMAB                        2         0        0       0
+  DUTASTERIDE                      1         1        0       1
+  ECHINACEA (ANGUSTIFOLIA), TABEBUIA IMPETIGINOSA, HYDRASTIS CANADENSIS, GLANDULA SUPRARENALIS SUIS, THYMUS (SUIS), THYROIDINUM (SUIS), ARSENICUM ALBUM, BRYONIA (ALBA), COCCULUS INDICUS, COLCHICUM AUTUMNALE, LEDUM PALUSTRE, MERCURIUS CYANATUS, NATRUM SULPHURICUM, PULSATILLA (PRATENSIS), SEPIA, SILICEA, AFLATOXIN (B1)         1         1        0       0
+  ECULIZUMAB                       1         1        0       0
+  ELVITEGRAVIR, COBICISTAT, EMTRICITABINE, AND TENOFOVIR DISOPROXIL FUMARATE         2         2        0       0
+  EMPAGLIFLOZIN                    8         5        2       3
+  EMPAGLIFLOZIN AND METFORMIN HYDROCHLORIDE         1         1        0       1
+  EMTRICITABINE AND TENOFOVIR DISOPROXIL FUMARATE         5         5        1       2
+  ENALAPRIL                        1         1        0       1
+  ENASIDENIB MESYLATE              1         1        0       1
+  ENCORAFENIB                      1         0        0       0
+  ENOXAPARIN SODIUM                2         2        0       1
+  ENTECAVIR                        1         0        0       0
+  ENZALUTAMIDE                     1         1        0       0
+  EPOPROSTENOL                     1         1        0       1
+  EPOPROSTENOL SODIUM              1         1        0       1
+  ERENUMAB-AOOE                    2         2        0       0
+  ESOMEPRAZOLE                     1         1        0       1
+  ESOMEPRAZOLE MAGNESIUM          37        37        2      10
+  ETANERCEPT                      23        17        0       4
+  ETELCALCETIDE                    1         1        1       0
+  EVEROLIMUS                       3         2        0       1
+  EVOLOCUMAB                       5         3        0       3
+  FEBUXOSTAT                       1         1        0       1
+  FEDRATINIB HYDROCHLORIDE         1         0        0       0
+  FELODIPINE                       1         1        0       1
+  FENOFIBRATE                      1         1        0       0
+  FESOTERODINE FUMARATE            2         1        0       1
+  FILGRASTIM                       1         1        0       0
+  FINGOLIMOD HCL                   4         1        0       0
+  FLUTICASONE FUROATE AND VILANTEROL TRIFENATATE         1         1        0       1
+  FLUTICASONE FUROATE, UMECLIDINIUM BROMIDE AND VILANTEROL TRIFENATATE         2         1        0       0
+  FLUTICASONE PROPIONATE           1         0        0       0
+  FOLIC ACID                       1         1        0       0
+  FUROSEMIDE                       5         5        1       4
+  GABAPENTIN                       6         6        0       1
+  GALCANEZUMAB-GNLM                1         0        0       0
+  GALSULFASE                       1         1        0       0
+  GEMCITABINE HYDROCHLORIDE         3         3        1       3
+  GLASDEGIB                        1         1        1       0
+  GLYCOPYRROLATE AND FORMOTEROL FUMARATE         1         0        0       0
+  GOLD                             1         1        0       0
+  GOLIMUMAB                        2         2        0       0
+  HEPARIN SODIUM                   1         1        0       1
+  HUMAN IMMUNOGLOBULIN G          11         9        0       5
+  HYDROCHLOROTHIAZIDE              2         2        0       2
+  HYDROCORTISONE ACETATE           1         1        0       0
+  HYDROXYCHLOROQUINE               1         1        0       0
+  HYDROXYCHLOROQUINE SULFATE         5         5        0       0
+  IBRUTINIB                       27        27        6      16
+  IBUPROFEN                        2         1        0       0
+  ICOSAPENT ETHYL                  1         1        0       0
+  IMATINIB                         1         1        0       1
+  IMATINIB MESYLATE                1         1        0       0
+  INFLIXIMAB                      10         9        1       2
+  INFLIXIMAB-DYYB                  2         2        0       1
+  INSULIN                          1         1        0       1
+  INSULIN GLARGINE                 2         2        0       2
+  INSULIN GLARGINE-YFGN            1         1        0       0
+  INSULIN HUMAN                    1         0        0       0
+  INSULIN LISPRO                   1         1        0       1
+  INTERFERON BETA-1A               2         1        0       1
+  IPILIMUMAB                       2         2        1       2
+  IRINOTECAN HYDROCHLORIDE         1         1        0       1
+  ISOSORBIDE DINITRATE             1         1        0       1
+  ISOTRETINOIN                     1         1        0       1
+  IXAZOMIB                         2         1        0       1
+  IXEKIZUMAB                       1         0        0       0
+  LAMOTRIGINE                      1         1        0       1
+  LANSOPRAZOLE                    12        12        1       4
+  LEFLUNOMIDE                     11        11        0       0
+  LENALIDOMIDE                    84        38        5      20
+  LENVATINIB                      31        27        9      27
+  LETROZOLE                        5         5        1       4
+  LEUPROLIDE ACETATE               2         2        0       2
+  LEVETIRACETAM                    4         3        1       1
+  LEVOFLOXACIN                     2         2        1       1
+  LEVONORGESTREL                   1         0        0       0
+  LEVOTHYROXINE SODIUM             1         1        1       0
+  LIDOCAINE HYDROCHLORIDE AND EPINEPHRINE BITARTRATE         1         1        0       0
+  LIFITEGRAST                      2         0        0       0
+  LINAGLIPTIN                      1         0        0       0
+  LISINOPRIL                       7         5        1       1
+  LITHIUM CARBONATE                1         1        0       0
+  LOMUSTINE                        1         1        0       0
+  LORATADINE                       1         0        0       0
+  LORATADINE PSEUDOEPHEDRINE SULFATE         1         1        0       1
+  LOSARTAN                         1         1        0       0
+  MACITENTAN                      11         9        2       8
+  MAGNESIUM HYDROXIDE              1         0        0       0
+  MEPOLIZUMAB                      2         2        0       2
+  MESALAMINE                       1         1        0       0
+  METFORMIN                       32        32        3      19
+  METFORMIN HYDROCHLORIDE          3         2        0       2
+  METHADONE HYDROCHLORIDE          1         1        0       1
+  METHOTREXATE                    26        26        1       6
+  METHOTREXATE SODIUM              7         7        1       2
+  METHYLPREDNISOLONE               1         1        0       1
+  METOPROLOL TARTRATE              1         1        1       1
+  METRELEPTIN                      1         1        0       1
+  METRONIDAZOLE                    1         1        0       1
+  MIFEPRISTONE                     2         2        1       2
+  MIRTAZAPINE                      1         1        0       0
+  MOMETASONE FUROATE               1         1        0       1
+  MOMETASONE FUROATE AND FORMOTEROL FUMARATE DIHYDRATE         1         0        0       0
+  MORPHINE                         2         2        0       2
+  MOXIFLOXACIN HYDROCHLORIDE         2         2        0       1
+  MYCOPHENOLATE MOFETIL            5         5        1       3
+  MYCOPHENOLIC ACID                1         1        1       0
+  NALTREXONE                       1         0        0       0
+  NAPROXEN                         1         1        0       1
+  NEBIVOLOL HYDROCHLORIDE          1         0        0       0
+  NETARSUDIL                       1         0        0       0
+  NETARSUDIL AND LATANOPROST OPHTHALMIC SOLUTION, 0.02%/0.005%         2         0        0       0
+  NINTEDANIB                       3         3        1       2
+  NITROGLYCERIN                    1         1        0       1
+  NIVOLUMAB                        9         8        2       5
+  OBINUTUZUMAB                     1         0        0       0
+  OCRELIZUMAB                      5         5        0       2
+  OCTREOTIDE ACETATE               2         2        1       2
+  OLANZAPINE                       1         1        0       0
+  OMALIZUMAB                       4         4        0       2
+  OMEPRAZOLE                      21        20        1       8
+  OMEPRAZOLE MAGNESIUM            23        23        6       4
+  ONDANSETRON HYDROCHLORIDE         1         1        0       0
+  OSELTAMIVIR                      1         0        0       0
+  OXYCODONE HYDROCHLORIDE          1         1        0       1
+  OXYCODONE HYDROCHLORIDE AND ACETAMINOPHEN         1         0        0       0
+  PACLITAXEL                       8         8        1       7
+  PALBOCICLIB                      9         3        1       2
+  PALIVIZUMAB                      2         2        0       2
+  PANCRELIPASE                     2         2        0       2
+  PANTOPRAZOLE                     4         4        0       1
+  PANTOPRAZOLE SODIUM              8         8        1       3
+  PATIROMER                        2         1        0       1
+  PAZOPANIB HYDROCHLORIDE          1         1        1       0
+  PEGLOTICASE                      1         0        0       0
+  PEGVISOMANT                      1         1        0       0
+  PEMBROLIZUMAB                  252       206       52     119
+  PEMETREXED                       9         9        5       3
+  PEMETREXED DISODIUM              9         9        2       6
+  PHENYTOIN SODIUM                 1         1        0       1
+  PIMAVANSERIN TARTRATE            4         4        1       2
+  PIOGLITAZONE                     3         3        0       2
+  PIRFENIDONE                      7         6        3       3
+  POLYETHYLENE GLYCOL 3350         4         0        0       0
+  POMALIDOMIDE                    51        19        1      11
+  POTASSIUM PHOSPHATE, DIBASIC         1         1        0       0
+  PRAVASTATIN SODIUM               1         0        0       0
+  PREGABALIN                      13        11        1       3
+  PSEUDOEPHEDRINE HCL              1         1        0       0
+  RABEPRAZOLE SODIUM               1         1        0       0
+  RALTEGRAVIR                      1         1        0       1
+  RAMIPRIL                         4         4        0       3
+  RANIBIZUMAB                      2         2        1       0
+  RIBOCICLIB                       1         1        0       1
+  RIFAXIMIN                        1         1        0       0
+  RIOCIGUAT                        4         4        2       4
+  RISANKIZUMAB-RZAA                2         2        0       0
+  RISPERIDONE                      2         1        0       1
+  RITUXIMAB                       12        11        1       3
+  RIVAROXABAN                     26        25        8      22
+  ROSUVASTATIN                     3         2        0       0
+  RUXOLITINIB                     12         7        0       3
+  SAXAGLIPTIN                      1         1        0       1
+  SECUKINUMAB                     18        15        1       7
+  SELEXIPAG                        3         3        2       2
+  SELINEXOR                       11         8        2       7
+  SEMAGLUTIDE                      1         1        1       1
+  SERTRALINE                       3         3        1       3
+  SERTRALINE HYDROCHLORIDE         1         1        0       1
+  SILDENAFIL CITRATE               2         2        1       1
+  SIMVASTATIN                      3         3        0       3
+  SIROLIMUS                        2         2        1       1
+  SITAGLIPTIN                      2         2        0       0
+  SITAGLIPTIN AND METFORMIN HYDROCHLORIDE         3         2        0       1
+  SODIUM OXYBATE                   6         5        1       1
+  SOTALOL HYDROCHLORIDE            1         1        1       1
+  SPIRONOLACTONE                   3         3        1       0
+  SULFAMETHOXAZOLE AND TRIMETHOPRIM         1         1        0       0
+  TACROLIMUS                       4         4        0       3
+  TADALAFIL                        2         1        0       0
+  TAFAMIDIS                        1         1        0       1
+  TASIMELTEON                      1         0        0       0
+  TEDUGLUTIDE                      1         1        0       1
+  TENOFOVIR DISOPROXIL FUMARATE         2         2        0       0
+  TERIFLUNOMIDE                    2         1        0       0
+  TEZACAFTOR AND IVACAFTOR         1         1        0       1
+  THALIDOMIDE                      1         0        0       0
+  TICAGRELOR                       3         3        0       2
+  TIOTROPIUM BROMIDE               2         1        0       1
+  TISOTUMAB VEDOTIN                1         1        0       0
+  TOBRAMYCIN                       1         1        0       1
+  TOCILIZUMAB                     24        24        0       4
+  TOFACITINIB                     15        11        1       3
+  TOLTERODINE TARTRATE             1         1        0       0
+  TOLVAPTAN                        1         1        0       1
+  TOPIRAMATE                       1         1        1       1
+  TOPOTECAN HYDROCHLORIDE          1         1        0       0
+  TORSEMIDE                        1         1        0       1
+  TRAMETINIB                       1         1        0       1
+  TRASTUZUMAB                      1         1        0       0
+  TREPROSTINIL                    19        12        2      11
+  TRIFLURIDINE AND TIPIRACIL         1         1        1       0
+  USTEKINUMAB                      2         1        0       1
+  VALSARTAN                        1         1        0       1
+  VARENICLINE TARTRATE             1         1        0       0
+  VEDOLIZUMAB                      7         7        0       3
+  VELAGLUCERASE ALFA               1         1        1       1
+  VISMODEGIB                       1         1        0       1
+  WARFARIN                        20        17        2      12
+  WARFARIN SODIUM                 19        17        0      12
+  ZOLEDRONIC ACID                  4         4        0       3
+
+── Top 15 Reactions ────────────────────────────────────────────
+
+  Death                                        66  ████████████████████████████████████████
+  Chronic kidney disease                       49  ████████████████████████████████████████
+  Drug ineffective                             47  ████████████████████████████████████████
+  Acute kidney injury                          39  ███████████████████████████████████████
+  Pneumonia                                    36  ████████████████████████████████████
+  Diarrhoea                                    25  █████████████████████████
+  Product dose omission                        24  ████████████████████████
+  Rash                                         20  ████████████████████
+  Product use in unapproved indication         20  ████████████████████
+  Malignant neoplasm progression               19  ███████████████████
+  Drug hypersensitivity                        16  ████████████████
+  Rheumatoid arthritis                         14  ██████████████
+  Fatigue                                      14  ██████████████
+  Weight decreased                             13  █████████████
+  Nasopharyngitis                              13  █████████████
+
+── Top 10 Countries ───────────────────────────────────────────
+
+  US       1,107
+  CA         274
+  GB         109
+  DE         100
+  JP          73
+  FR          68
+  ES          27
+  IT          22
+  CO          14
+  AU          13
+
+── Data Quality Checks ────────────────────────────────────────
+
+  ✓ PASS  Events have event_id
+  ✓ PASS  Events have ingest_timestamp
+  ✗ FAIL  Events have generic_name
+  ✓ PASS  Events have primary_reaction
+  ✓ PASS  Serious flag populated
+  ✓ PASS  Country populated (>50%)
+  ✓ PASS  Multiple drugs present
+  ✓ PASS  7d events present
+  ✓ PASS  Spike drug has 7d events
+
+  Some checks failed — review data.

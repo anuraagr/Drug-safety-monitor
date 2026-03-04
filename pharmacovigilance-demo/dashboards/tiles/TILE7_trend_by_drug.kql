@@ -1,0 +1,18 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 7: 30-Day Trend — Line chart with series per drug
+// Visualization: Multi-line chart (one line per drug)
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(generic_name)
+| summarize Events = count()
+  by Drug = generic_name, Day = bin(ingest_timestamp, 1d)
+| order by Day asc, Drug asc
+| render linechart with (
+    title="Daily Events by Drug (30d)",
+    xtitle="Date",
+    ytitle="Events",
+    legend=visible
+)

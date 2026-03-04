@@ -1,0 +1,18 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 1: Command Center — Key Metrics Stat Cards
+// Visualization: Stat tile (use KQL result properties)
+// Refresh: 30 seconds
+// ════════════════════════════════════════════════════════════════
+
+AdverseEvents
+| where ingest_timestamp > ago(24h)
+| summarize
+    Total_Events_24h    = count(),
+    Serious_Events      = countif(is_serious),
+    Deaths              = countif(death),
+    Hospitalizations    = countif(hospitalization),
+    Life_Threatening    = countif(life_threatening),
+    Drugs_Monitored     = dcount(generic_name),
+    Countries_Reporting = dcount(country)
+| extend
+    Serious_Rate_Pct = round(100.0 * Serious_Events / Total_Events_24h, 1)

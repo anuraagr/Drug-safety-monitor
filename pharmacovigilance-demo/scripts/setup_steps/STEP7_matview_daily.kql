@@ -1,0 +1,15 @@
+// STEP 7: Materialized View — Daily Event Summary
+// Select ALL text below and click Run
+
+.create-or-alter materialized-view with (backfill=true) DailyEventSummary on table AdverseEvents
+{
+    AdverseEvents
+    | summarize
+        total_events       = count(),
+        serious_events     = countif(is_serious),
+        hospitalization_count = countif(hospitalization),
+        death_count        = countif(death),
+        distinct_drugs     = dcount(generic_name),
+        distinct_reactions = dcount(primary_reaction)
+      by event_date = bin(ingest_timestamp, 1d)
+}

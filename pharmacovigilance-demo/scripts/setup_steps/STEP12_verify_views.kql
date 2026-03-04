@@ -1,0 +1,5 @@
+// STEP 12 (VERIFY): Check materialized views and functions
+// Select ALL text below and click Run
+
+.show materialized-views
+| project Name, MaterializedTo, IsHealthy

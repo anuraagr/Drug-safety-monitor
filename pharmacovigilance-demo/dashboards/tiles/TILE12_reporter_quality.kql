@@ -1,0 +1,32 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 12: Reporter Qualification Breakdown — Donut / pie chart
+// Visualization: Pie chart or donut chart
+// Refresh: 120 seconds
+// ════════════════════════════════════════════════════════════════
+// Shows WHO is reporting adverse events. FDA qualification codes:
+//   1 = Physician, 2 = Pharmacist, 3 = Other health professional,
+//   4 = Lawyer, 5 = Consumer/non-health professional
+// Physician-reported events carry higher evidentiary weight.
+// This tile helps the audience understand data quality & reliability.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| extend Reporter = case(
+    qualification == "1", "Physician",
+    qualification == "2", "Pharmacist",
+    qualification == "3", "Other Health Prof.",
+    qualification == "4", "Lawyer",
+    qualification == "5", "Consumer",
+    "Not Specified"
+  )
+| summarize
+    Events         = count(),
+    Serious_Events = countif(is_serious),
+    Deaths         = countif(death)
+  by Reporter
+| extend Serious_Pct = round(100.0 * Serious_Events / Events, 1)
+| order by Events desc
+| render piechart with (
+    title="Reports by Source Qualification (30d)",
+    legend=visible
+)

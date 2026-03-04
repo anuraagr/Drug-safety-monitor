@@ -1,0 +1,5 @@
+// STEP 3b: Set caching policy (hot cache 90 days)
+// Select ALL text below and click Run
+
+.alter table AdverseEvents policy caching
+    hot = 90d

@@ -1,0 +1,4 @@
+// STEP 3a: Set retention policy (365 days)
+// Select ALL text below and click Run
+
+.alter table AdverseEvents policy retention '{"SoftDeletePeriod":"365.00:00:00","Recoverability":"Enabled"}'

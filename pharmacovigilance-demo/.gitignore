@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Large generated files (keep sample_data tracked via LFS or exclude)
+# sample_data/adverse_events_portfolio.json
+# sample_data/ingest_commands.kql

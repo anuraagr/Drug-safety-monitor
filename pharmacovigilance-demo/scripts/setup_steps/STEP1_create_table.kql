@@ -1,0 +1,33 @@
+// STEP 1: Create the AdverseEvents table
+// Select ALL text below and click Run
+
+.create-merge table AdverseEvents (
+    event_id:               string,
+    safety_report_id:       string,
+    receive_date:           datetime,
+    ingest_timestamp:       datetime,
+    is_serious:             bool,
+    hospitalization:        bool,
+    death:                  bool,
+    life_threatening:       bool,
+    disability:             bool,
+    congenital_anomaly:     bool,
+    required_intervention:  bool,
+    patient_age:            string,
+    patient_age_unit:       string,
+    patient_sex:            string,
+    patient_weight:         string,
+    drug_name:              string,
+    generic_name:           string,
+    brand_name:             string,
+    drug_route:             string,
+    drug_indication:        string,
+    drug_characterization:  string,
+    reaction_terms:         string,
+    primary_reaction:       string,
+    reaction_count:         int,
+    country:                string,
+    sender_organization:    string,
+    report_type:            string,
+    qualification:          string
+)

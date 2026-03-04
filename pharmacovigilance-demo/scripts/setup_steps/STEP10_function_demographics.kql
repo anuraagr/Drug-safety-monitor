@@ -1,0 +1,27 @@
+// STEP 10: Function — Patient Demographics
+// Select ALL text below and click Run
+
+.create-or-alter function with (folder="Analytics", docstring="Patient demographics for a given drug")
+PatientDemographics(drug_generic_name: string)
+{
+    AdverseEvents
+    | where generic_name =~ drug_generic_name
+    | where ingest_timestamp > ago(90d)
+    | extend age_numeric = todouble(patient_age)
+    | extend age_group = case(
+        age_numeric <= 17,  "Pediatric (<=17)",
+        age_numeric <= 44,  "Adult (18-44)",
+        age_numeric <= 64,  "Middle-aged (45-64)",
+        age_numeric <= 84,  "Elderly (65-84)",
+        age_numeric > 84,   "Very elderly (85+)",
+        "Unknown"
+    )
+    | extend sex_label = case(
+        patient_sex == "1", "Male",
+        patient_sex == "2", "Female",
+        "Unknown"
+    )
+    | summarize event_count = count(), serious_count = countif(is_serious)
+      by age_group, sex_label
+    | order by age_group asc, sex_label asc
+}

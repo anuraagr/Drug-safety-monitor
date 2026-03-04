@@ -1,0 +1,55 @@
+// STEP 9: Function — Spike Detection
+// Select ALL text below and click Run
+
+.create-or-alter function with (folder="SignalDetection", docstring="Detect drug+reaction safety signal spikes") 
+DetectSafetySignals(spike_multiplier: real = 2.0, min_event_count: int = 5)
+{
+    let recent =
+        AdverseEvents
+        | where is_serious == true
+        | where ingest_timestamp > ago(7d)
+        | summarize
+            event_count = count(),
+            hospitalization_count = countif(hospitalization),
+            death_count = countif(death),
+            life_threatening_count = countif(life_threatening),
+            latest_event = max(ingest_timestamp),
+            distinct_reports = dcount(safety_report_id)
+          by generic_name, primary_reaction
+        | project generic_name, primary_reaction, recent_count = event_count,
+                  recent_hosp = hospitalization_count, recent_death = death_count,
+                  latest_event;
+    let baseline =
+        AdverseEvents
+        | where is_serious == true
+        | where ingest_timestamp > ago(30d)
+        | summarize
+            event_count = count(),
+            hospitalization_count = countif(hospitalization),
+            death_count = countif(death)
+          by generic_name, primary_reaction
+        | project generic_name, primary_reaction, baseline_count = event_count,
+                  baseline_hosp = hospitalization_count, baseline_death = death_count;
+    recent
+    | join kind=inner baseline on generic_name, primary_reaction
+    | extend expected_7d = (todouble(baseline_count) / 30.0) * 7.0
+    | extend spike_ratio = iff(expected_7d > 0, todouble(recent_count) / expected_7d, 0.0)
+    | where recent_count >= min_event_count
+    | where spike_ratio >= spike_multiplier
+    | project
+        generic_name,
+        primary_reaction,
+        recent_7d_count     = recent_count,
+        baseline_30d_count  = baseline_count,
+        expected_7d_count   = round(expected_7d, 1),
+        spike_ratio         = round(spike_ratio, 2),
+        recent_deaths       = recent_death,
+        recent_hospitalizations = recent_hosp,
+        latest_event,
+        signal_severity     = case(
+            recent_death > 0, "CRITICAL",
+            recent_hosp > 0,  "HIGH",
+            "MEDIUM"
+        )
+    | order by spike_ratio desc, recent_7d_count desc
+}

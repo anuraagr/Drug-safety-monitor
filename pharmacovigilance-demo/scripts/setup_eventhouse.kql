@@ -1,0 +1,458 @@
+// ============================================================================
+// Drug Safety Signal Monitor — Eventhouse KQL Schema & Materialized Views
+// ============================================================================
+// Execute this script in your Fabric Eventhouse KQL database (DrugSafetyDB).
+// Navigate to: Fabric Workspace → Eventhouse → Query Editor → paste & run.
+//
+// This script creates:
+//   1. Landing table (raw ingestion target for Eventstream)
+//   2. Ingestion mapping (JSON → table columns)
+//   3. Materialized views for signal detection analytics
+//   4. Retention & caching policies tuned for real-time monitoring
+// ============================================================================
+
+
+// ============================================================================
+// STEP 1: Create the AdverseEvents table
+// ============================================================================
+// This is the primary landing table for events arriving from Fabric Eventstream.
+// Column types are chosen to align with openFDA FAERS fields and to enable
+// efficient KQL time-series analytics.
+
+.create-merge table AdverseEvents (
+    event_id:               string,        // Unique event UUID (generated at ingestion)
+    safety_report_id:       string,        // FDA safety report identifier
+    receive_date:           datetime,      // Date FDA received the report (ISO 8601)
+    ingest_timestamp:       datetime,      // Timestamp of ingestion into Fabric (streaming time)
+    is_serious:             bool,          // True if any seriousness criterion is met
+    hospitalization:        bool,          // Resulted in hospitalization
+    death:                  bool,          // Resulted in death
+    life_threatening:       bool,          // Was life-threatening
+    disability:             bool,          // Resulted in disability
+    congenital_anomaly:     bool,          // Resulted in congenital anomaly
+    required_intervention:  bool,          // Required medical intervention
+    patient_age:            string,        // Patient age at onset (string; units vary)
+    patient_age_unit:       string,        // Age unit code (800=decade, 801=year, 802=month, etc.)
+    patient_sex:            string,        // Patient sex (0=unknown, 1=male, 2=female)
+    patient_weight:         string,        // Patient weight in kg
+    drug_name:              string,        // Medicinal product name (as reported)
+    generic_name:           string,        // openFDA standardized generic name
+    brand_name:             string,        // openFDA standardized brand name
+    drug_route:             string,        // Route of administration
+    drug_indication:        string,        // Therapeutic indication
+    drug_characterization:  string,        // 1=suspect, 2=concomitant, 3=interacting
+    reaction_terms:         string,        // Comma-separated MedDRA preferred terms
+    primary_reaction:       string,        // First/primary adverse reaction term
+    reaction_count:         int,           // Number of distinct reactions reported
+    country:                string,        // Country where event occurred
+    sender_organization:    string,        // Organization that submitted the report
+    report_type:            string,        // Report type (1=spontaneous, 2=study, etc.)
+    qualification:          string         // Reporter qualification (1=physician, 2=pharmacist, etc.)
+)
+
+
+// ============================================================================
+// STEP 2: Create JSON ingestion mapping
+// ============================================================================
+// This mapping tells Eventhouse how to parse the JSON payloads from Eventstream.
+// The mapping name must match what is configured in the Eventstream data connection.
+
+.create-or-alter table AdverseEvents ingestion json mapping 'AdverseEvents_JsonMapping'
+```
+[
+    {"column": "event_id",              "path": "$.event_id",              "datatype": "string"},
+    {"column": "safety_report_id",      "path": "$.safety_report_id",      "datatype": "string"},
+    {"column": "receive_date",          "path": "$.receive_date",          "datatype": "datetime"},
+    {"column": "ingest_timestamp",      "path": "$.ingest_timestamp",      "datatype": "datetime"},
+    {"column": "is_serious",            "path": "$.is_serious",            "datatype": "bool"},
+    {"column": "hospitalization",       "path": "$.hospitalization",       "datatype": "bool"},
+    {"column": "death",                 "path": "$.death",                 "datatype": "bool"},
+    {"column": "life_threatening",      "path": "$.life_threatening",      "datatype": "bool"},
+    {"column": "disability",            "path": "$.disability",            "datatype": "bool"},
+    {"column": "congenital_anomaly",    "path": "$.congenital_anomaly",    "datatype": "bool"},
+    {"column": "required_intervention", "path": "$.required_intervention", "datatype": "bool"},
+    {"column": "patient_age",           "path": "$.patient_age",           "datatype": "string"},
+    {"column": "patient_age_unit",      "path": "$.patient_age_unit",      "datatype": "string"},
+    {"column": "patient_sex",           "path": "$.patient_sex",           "datatype": "string"},
+    {"column": "patient_weight",        "path": "$.patient_weight",        "datatype": "string"},
+    {"column": "drug_name",             "path": "$.drug_name",             "datatype": "string"},
+    {"column": "generic_name",          "path": "$.generic_name",          "datatype": "string"},
+    {"column": "brand_name",            "path": "$.brand_name",            "datatype": "string"},
+    {"column": "drug_route",            "path": "$.drug_route",            "datatype": "string"},
+    {"column": "drug_indication",       "path": "$.drug_indication",       "datatype": "string"},
+    {"column": "drug_characterization", "path": "$.drug_characterization", "datatype": "string"},
+    {"column": "reaction_terms",        "path": "$.reaction_terms",        "datatype": "string"},
+    {"column": "primary_reaction",      "path": "$.primary_reaction",      "datatype": "string"},
+    {"column": "reaction_count",        "path": "$.reaction_count",        "datatype": "int"},
+    {"column": "country",               "path": "$.country",               "datatype": "string"},
+    {"column": "sender_organization",   "path": "$.sender_organization",   "datatype": "string"},
+    {"column": "report_type",           "path": "$.report_type",           "datatype": "string"},
+    {"column": "qualification",         "path": "$.qualification",         "datatype": "string"}
+]
+```
+
+
+// ============================================================================
+// STEP 3: Configure retention and caching policies
+// ============================================================================
+// Hot cache = 90 days (fast queries for dashboards)
+// Retention = 365 days (keep one full year of FAERS data)
+
+.alter table AdverseEvents policy retention
+```
+{
+    "SoftDeletePeriod": "365.00:00:00",
+    "Recoverability": "Enabled"
+}
+```
+
+.alter table AdverseEvents policy caching
+    hot = 90d
+
+
+// ============================================================================
+// STEP 4: Enable streaming ingestion
+// ============================================================================
+// Required for Fabric Eventstream to push data with low latency.
+// In Fabric Eventhouse, streaming ingestion is enabled by default on most SKUs,
+// but this ensures the table-level policy is explicitly set.
+
+.alter table AdverseEvents policy streamingingestion enable
+
+
+// ============================================================================
+// STEP 5: Materialized View — Serious Events by Drug + Reaction (7-day window)
+// ============================================================================
+// Aggregates serious event counts per drug+reaction combination over a rolling
+// 7-day window. Used by the spike detection logic and dashboard tiles.
+// Materialized views in Fabric Eventhouse are incrementally maintained —
+// they update automatically as new data arrives.
+
+.create-or-alter materialized-view with (backfill=true) SeriousEvents_7Day on table AdverseEvents
+{
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(7d)
+    | summarize
+        event_count       = count(),
+        hospitalization_count = countif(hospitalization),
+        death_count       = countif(death),
+        life_threatening_count = countif(life_threatening),
+        latest_event      = max(ingest_timestamp),
+        earliest_event    = min(ingest_timestamp),
+        distinct_reports  = dcount(safety_report_id)
+      by generic_name, primary_reaction
+}
+
+
+// ============================================================================
+// STEP 6: Materialized View — Serious Events by Drug + Reaction (30-day window)
+// ============================================================================
+// Provides the historical baseline for spike comparison.
+// Signal = (7-day count) > 2× (30-day daily average × 7).
+
+.create-or-alter materialized-view with (backfill=true) SeriousEvents_30Day on table AdverseEvents
+{
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(30d)
+    | summarize
+        event_count       = count(),
+        hospitalization_count = countif(hospitalization),
+        death_count       = countif(death),
+        life_threatening_count = countif(life_threatening),
+        latest_event      = max(ingest_timestamp),
+        earliest_event    = min(ingest_timestamp),
+        distinct_reports  = dcount(safety_report_id)
+      by generic_name, primary_reaction
+}
+
+
+// ============================================================================
+// STEP 7: Materialized View — Daily Event Summary
+// ============================================================================
+// Provides a daily rollup for trend-line charts and moving averages.
+
+.create-or-alter materialized-view with (backfill=true) DailyEventSummary on table AdverseEvents
+{
+    AdverseEvents
+    | summarize
+        total_events       = count(),
+        serious_events     = countif(is_serious),
+        hospitalization_count = countif(hospitalization),
+        death_count        = countif(death),
+        distinct_drugs     = dcount(generic_name),
+        distinct_reactions = dcount(primary_reaction)
+      by event_date = bin(ingest_timestamp, 1d)
+}
+
+
+// ============================================================================
+// STEP 8: Materialized View — Geographic Distribution
+// ============================================================================
+// Aggregates event counts by country for the heatmap dashboard tile.
+
+.create-or-alter materialized-view with (backfill=true) EventsByCountry on table AdverseEvents
+{
+    AdverseEvents
+    | where isnotempty(country)
+    | summarize
+        total_events   = count(),
+        serious_events = countif(is_serious),
+        death_count    = countif(death)
+      by country
+}
+
+
+// ============================================================================
+// STEP 9: Function — Spike Detection Query
+// ============================================================================
+// Stored function that detects drug+reaction combinations where the 7-day
+// serious event count exceeds a configurable multiplier × the 30-day
+// daily average (projected to 7 days).
+//
+// Parameters:
+//   spike_multiplier : real  (default 2.0 — flag when 7d count > 2× baseline)
+//   min_event_count  : int   (default 5 — ignore low-volume noise)
+//
+// Usage:  DetectSafetySignals(2.0, 5)
+
+.create-or-alter function with (folder="SignalDetection", docstring="Detect drug+reaction safety signal spikes") 
+DetectSafetySignals(spike_multiplier: real = 2.0, min_event_count: int = 5)
+{
+    let recent =
+        AdverseEvents
+        | where is_serious == true
+        | where ingest_timestamp > ago(7d)
+        | summarize
+            event_count = count(),
+            hospitalization_count = countif(hospitalization),
+            death_count = countif(death),
+            life_threatening_count = countif(life_threatening),
+            latest_event = max(ingest_timestamp),
+            distinct_reports = dcount(safety_report_id)
+          by generic_name, primary_reaction
+        | project generic_name, primary_reaction, recent_count = event_count,
+                  recent_hosp = hospitalization_count, recent_death = death_count,
+                  latest_event;
+    let baseline =
+        AdverseEvents
+        | where is_serious == true
+        | where ingest_timestamp > ago(30d)
+        | summarize
+            event_count = count(),
+            hospitalization_count = countif(hospitalization),
+            death_count = countif(death)
+          by generic_name, primary_reaction
+        | project generic_name, primary_reaction, baseline_count = event_count,
+                  baseline_hosp = hospitalization_count, baseline_death = death_count;
+    recent
+    | join kind=inner baseline on generic_name, primary_reaction
+    | extend expected_7d = (todouble(baseline_count) / 30.0) * 7.0
+    | extend spike_ratio = iff(expected_7d > 0, todouble(recent_count) / expected_7d, 0.0)
+    | where recent_count >= min_event_count
+    | where spike_ratio >= spike_multiplier
+    | project
+        generic_name,
+        primary_reaction,
+        recent_7d_count     = recent_count,
+        baseline_30d_count  = baseline_count,
+        expected_7d_count   = round(expected_7d, 1),
+        spike_ratio         = round(spike_ratio, 2),
+        recent_deaths       = recent_death,
+        recent_hospitalizations = recent_hosp,
+        latest_event,
+        signal_severity     = case(
+            recent_death > 0, "CRITICAL",
+            recent_hosp > 0,  "HIGH",
+            "MEDIUM"
+        )
+    | order by spike_ratio desc, recent_7d_count desc
+}
+
+
+// ============================================================================
+// STEP 10: Function — Patient Demographics Summary
+// ============================================================================
+// Provides a breakdown of adverse events by age group and sex for a given drug.
+//
+// Usage:  PatientDemographics("aspirin")
+
+.create-or-alter function with (folder="Analytics", docstring="Patient demographics for a given drug")
+PatientDemographics(drug_generic_name: string)
+{
+    AdverseEvents
+    | where generic_name =~ drug_generic_name
+    | where ingest_timestamp > ago(90d)
+    | extend age_numeric = todouble(patient_age)
+    | extend age_group = case(
+        age_numeric <= 17,  "Pediatric (≤17)",
+        age_numeric <= 44,  "Adult (18-44)",
+        age_numeric <= 64,  "Middle-aged (45-64)",
+        age_numeric <= 84,  "Elderly (65-84)",
+        age_numeric > 84,   "Very elderly (85+)",
+        "Unknown"
+    )
+    | extend sex_label = case(
+        patient_sex == "1", "Male",
+        patient_sex == "2", "Female",
+        "Unknown"
+    )
+    | summarize event_count = count(), serious_count = countif(is_serious)
+      by age_group, sex_label
+    | order by age_group asc, sex_label asc
+}
+
+
+// ============================================================================
+// VERIFICATION: Check table and views exist
+// ============================================================================
+
+.show table AdverseEvents details
+| project TableName, TotalRowCount, TotalOriginalSize
+
+.show materialized-views
+| project Name, MaterializedTo, IsHealthy
+
+
+// ============================================================================
+// STEP 13: Function — Drug Comparison Report
+// ============================================================================
+// Compares two drugs head-to-head across safety dimensions.
+//
+// Usage:  DrugComparisonReport("aspirin", "pembrolizumab")
+
+.create-or-alter function with (folder="Analytics", docstring="Head-to-head safety comparison of two drugs")
+DrugComparisonReport(drug_a: string, drug_b: string)
+{
+    let drugs = pack_array(drug_a, drug_b);
+    AdverseEvents
+    | where ingest_timestamp > ago(90d)
+    | where generic_name in~ (drugs)
+    | summarize
+        Total_Events       = count(),
+        Serious            = countif(is_serious),
+        Deaths             = countif(death),
+        Hospitalizations   = countif(hospitalization),
+        Life_Threatening   = countif(life_threatening),
+        Disabilities       = countif(disability),
+        Unique_Reactions   = dcount(primary_reaction),
+        Countries          = dcount(country),
+        Physician_Reports  = countif(qualification == "1"),
+        Consumer_Reports   = countif(qualification == "5"),
+        Latest_Report      = max(ingest_timestamp),
+        Avg_Age            = round(avgif(todouble(patient_age), patient_age_unit == "801" and isnotempty(patient_age)), 1)
+      by Drug = generic_name
+    | extend
+        Serious_Rate = strcat(tostring(round(100.0 * Serious / Total_Events, 1)), "%"),
+        Death_Rate   = strcat(tostring(round(100.0 * Deaths / Total_Events, 2)), "%"),
+        Physician_Pct = strcat(tostring(round(100.0 * Physician_Reports / Total_Events, 0)), "%")
+    | project
+        Drug,
+        Total_Events,
+        Serious,
+        Serious_Rate,
+        Deaths,
+        Death_Rate,
+        Hospitalizations,
+        Life_Threatening,
+        Unique_Reactions,
+        Countries,
+        Physician_Pct,
+        Avg_Age,
+        Latest_Report
+    | order by Drug asc
+}
+
+
+// ============================================================================
+// STEP 14: Function — Reaction Timeline
+// ============================================================================
+// Time-series breakdown of a drug's adverse reactions over a configurable window.
+//
+// Usage:  ReactionTimeline("aspirin", 30d)
+
+.create-or-alter function with (folder="Analytics", docstring="Daily reaction counts for a drug over a configurable window")
+ReactionTimeline(drug_generic_name: string, window: timespan = 30d)
+{
+    AdverseEvents
+    | where ingest_timestamp > ago(window)
+    | where generic_name =~ drug_generic_name
+    | where isnotempty(primary_reaction)
+    | summarize Events = count()
+      by Reaction = primary_reaction, Day = bin(ingest_timestamp, 1d)
+    | order by Day asc, Events desc
+}
+
+
+// ============================================================================
+// STEP 15: Function — Risk Score Card
+// ============================================================================
+// Composite risk score (0-100) for a drug based on seriousness, mortality,
+// reporting velocity, and reaction breadth.
+//
+// Usage:  RiskScoreCard("aspirin")
+
+.create-or-alter function with (folder="SignalDetection", docstring="Composite pharmacovigilance risk score for a drug")
+RiskScoreCard(drug_generic_name: string)
+{
+    let stats = AdverseEvents
+        | where ingest_timestamp > ago(90d)
+        | where generic_name =~ drug_generic_name
+        | summarize
+            total         = count(),
+            serious       = countif(is_serious),
+            deaths        = countif(death),
+            hosp          = countif(hospitalization),
+            lt            = countif(life_threatening),
+            reactions     = dcount(primary_reaction),
+            countries     = dcount(country),
+            latest        = max(ingest_timestamp),
+            recent_7d     = countif(ingest_timestamp > ago(7d)),
+            recent_30d    = countif(ingest_timestamp > ago(30d));
+    let signals = DetectSafetySignals(2.0, 3)
+        | where generic_name =~ drug_generic_name
+        | summarize
+            active_signals = count(),
+            max_spike      = max(spike_ratio)
+        ;
+    stats
+    | extend
+        seriousness_score = round(todouble(serious) / total * 100.0, 1),
+        mortality_score   = round(iff(total > 0, todouble(deaths) / total * 1000.0, 0.0), 1),
+        velocity_score    = round(iff(recent_30d > 0, todouble(recent_7d) / recent_30d * 100.0 * (30.0/7.0), 0.0), 1),
+        breadth_score     = round(todouble(reactions) * 2.0, 1)
+    | extend
+        mortality_score = iff(mortality_score > 100, 100.0, mortality_score),
+        velocity_score  = iff(velocity_score > 100, 100.0, velocity_score),
+        breadth_score   = iff(breadth_score > 100, 100.0, breadth_score)
+    | extend
+        composite_risk = round(
+            seriousness_score * 0.30 +
+            mortality_score   * 0.30 +
+            velocity_score    * 0.25 +
+            breadth_score     * 0.15
+        , 1)
+    | extend
+        risk_level = case(
+            composite_risk >= 70, "🔴 CRITICAL",
+            composite_risk >= 50, "🟠 HIGH",
+            composite_risk >= 30, "🟡 ELEVATED",
+            "🟢 NORMAL"
+        )
+    | project
+        Drug           = drug_generic_name,
+        Risk_Level     = risk_level,
+        Composite_Score = composite_risk,
+        Seriousness_Pct = seriousness_score,
+        Mortality_Per1k = mortality_score,
+        Velocity_Score  = velocity_score,
+        Reaction_Breadth = breadth_score,
+        Total_Events_90d = total,
+        Deaths           = deaths,
+        Hospitalizations = hosp,
+        Active_Reactions = reactions,
+        Countries        = countries,
+        Latest_Report    = latest
+    | take 1
+}

@@ -1,0 +1,19 @@
+// ============================================================================
+// STEP 14: Function — Reaction Timeline
+// ============================================================================
+// Time-series breakdown of a drug's adverse reactions over 30 days.
+// Useful for showing how a specific reaction is trending.
+//
+// Usage:  ReactionTimeline("aspirin", 30d)
+
+.create-or-alter function with (folder="Analytics", docstring="Daily reaction counts for a drug over a configurable window")
+ReactionTimeline(drug_generic_name: string, window: timespan = 30d)
+{
+    AdverseEvents
+    | where ingest_timestamp > ago(window)
+    | where generic_name =~ drug_generic_name
+    | where isnotempty(primary_reaction)
+    | summarize Events = count()
+      by Reaction = primary_reaction, Day = bin(ingest_timestamp, 1d)
+    | order by Day asc, Events desc
+}

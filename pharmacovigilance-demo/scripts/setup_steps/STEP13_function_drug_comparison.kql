@@ -1,0 +1,49 @@
+// ============================================================================
+// STEP 13: Function — Drug Comparison Report
+// ============================================================================
+// Compares two drugs head-to-head across safety dimensions.
+// Perfect for "what-if" discussions during demos.
+//
+// Usage:  DrugComparisonReport("aspirin", "pembrolizumab")
+
+.create-or-alter function with (folder="Analytics", docstring="Head-to-head safety comparison of two drugs")
+DrugComparisonReport(drug_a: string, drug_b: string)
+{
+    let drugs = pack_array(drug_a, drug_b);
+    AdverseEvents
+    | where ingest_timestamp > ago(90d)
+    | where generic_name in~ (drugs)
+    | summarize
+        Total_Events       = count(),
+        Serious            = countif(is_serious),
+        Deaths             = countif(death),
+        Hospitalizations   = countif(hospitalization),
+        Life_Threatening   = countif(life_threatening),
+        Disabilities       = countif(disability),
+        Unique_Reactions   = dcount(primary_reaction),
+        Countries          = dcount(country),
+        Physician_Reports  = countif(qualification == "1"),
+        Consumer_Reports   = countif(qualification == "5"),
+        Latest_Report      = max(ingest_timestamp),
+        Avg_Age            = round(avgif(todouble(patient_age), patient_age_unit == "801" and isnotempty(patient_age)), 1)
+      by Drug = generic_name
+    | extend
+        Serious_Rate = strcat(tostring(round(100.0 * Serious / Total_Events, 1)), "%"),
+        Death_Rate   = strcat(tostring(round(100.0 * Deaths / Total_Events, 2)), "%"),
+        Physician_Pct = strcat(tostring(round(100.0 * Physician_Reports / Total_Events, 0)), "%")
+    | project
+        Drug,
+        Total_Events,
+        Serious,
+        Serious_Rate,
+        Deaths,
+        Death_Rate,
+        Hospitalizations,
+        Life_Threatening,
+        Unique_Reactions,
+        Countries,
+        Physician_Pct,
+        Avg_Age,
+        Latest_Report
+    | order by Drug asc
+}

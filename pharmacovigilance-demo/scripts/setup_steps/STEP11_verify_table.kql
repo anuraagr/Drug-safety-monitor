@@ -1,0 +1,5 @@
+// STEP 11 (VERIFY): Check everything was created
+// Select ALL text below and click Run
+
+.show table AdverseEvents details
+| project TableName, TotalRowCount, TotalOriginalSize

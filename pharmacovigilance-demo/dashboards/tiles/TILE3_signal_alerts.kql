@@ -1,0 +1,55 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 3: Safety Signal Alerts — THE KEY DEMO TILE
+// Visualization: Table with conditional formatting
+// Refresh: 30 seconds
+// ════════════════════════════════════════════════════════════════
+// This is the centerpiece of the demo. It compares 7-day serious
+// event counts against the 30-day baseline to detect spikes.
+// Configure Severity column with conditional formatting:
+//   CRITICAL = red background, HIGH = orange, MEDIUM = yellow
+
+let recent_window = 7d;
+let baseline_window = 30d;
+let spike_multiplier = 2.0;
+let min_events = 3;
+let recent =
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(recent_window)
+    | summarize
+        recent_count = count(),
+        recent_hosp  = countif(hospitalization),
+        recent_death = countif(death),
+        recent_lt    = countif(life_threatening),
+        latest_event = max(ingest_timestamp),
+        distinct_reports = dcount(safety_report_id)
+      by generic_name, primary_reaction;
+let baseline =
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(baseline_window)
+    | summarize baseline_count = count()
+      by generic_name, primary_reaction;
+recent
+| join kind=inner baseline on generic_name, primary_reaction
+| extend expected_7d = (todouble(baseline_count) / 30.0) * 7.0
+| extend spike_ratio = iff(expected_7d > 0, todouble(recent_count) / expected_7d, 0.0)
+| where recent_count >= min_events
+| where spike_ratio >= spike_multiplier
+| project
+    Severity        = case(
+        recent_death > 0, "🔴 CRITICAL",
+        recent_hosp > 0,  "🟠 HIGH",
+        recent_lt > 0,    "🟡 ELEVATED",
+        "🔵 MEDIUM"
+    ),
+    Drug            = generic_name,
+    Reaction        = primary_reaction,
+    Events_7d       = recent_count,
+    Expected_7d     = round(expected_7d, 1),
+    Spike_Ratio     = strcat(tostring(round(spike_ratio, 1)), "x"),
+    Deaths          = recent_death,
+    Hospitalizations = recent_hosp,
+    Unique_Reports  = distinct_reports,
+    Latest          = format_datetime(latest_event, "MM/dd HH:mm")
+| order by recent_death desc, recent_hosp desc, recent_count desc

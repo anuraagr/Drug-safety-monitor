@@ -1,0 +1,18 @@
+// STEP 6: Materialized View — Serious Events 30-day window (baseline)
+// Select ALL text below and click Run
+
+.create-or-alter materialized-view with (backfill=true) SeriousEvents_30Day on table AdverseEvents
+{
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(30d)
+    | summarize
+        event_count       = count(),
+        hospitalization_count = countif(hospitalization),
+        death_count       = countif(death),
+        life_threatening_count = countif(life_threatening),
+        latest_event      = max(ingest_timestamp),
+        earliest_event    = min(ingest_timestamp),
+        distinct_reports  = dcount(safety_report_id)
+      by generic_name, primary_reaction
+}

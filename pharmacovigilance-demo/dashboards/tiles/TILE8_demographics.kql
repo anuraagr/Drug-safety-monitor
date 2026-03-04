@@ -1,0 +1,45 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 8: Patient Demographics — Age/Sex breakdown
+// Visualization: Pie chart (Sex) + Bar chart (Age Band)
+// Use as two separate tiles or toggle
+// Refresh: 120 seconds
+// ════════════════════════════════════════════════════════════════
+
+// --- TILE 8a: Sex Distribution ---
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| extend Sex_Label = case(
+    patient_sex == "1", "Male",
+    patient_sex == "2", "Female",
+    patient_sex == "0", "Unknown",
+    "Not Reported"
+  )
+| summarize Events = count() by Sex_Label
+| order by Events desc
+| render piechart with (
+    title="Patient Sex Distribution (30d)",
+    legend=visible
+)
+
+// --- TILE 8b: Age Distribution ---
+// (paste into a SEPARATE tile)
+//
+// AdverseEvents
+// | where ingest_timestamp > ago(30d)
+// | where isnotempty(patient_age) and patient_age_unit == "801" // years
+// | extend Age = todouble(patient_age)
+// | extend Age_Band = case(
+//     Age < 18,  "0-17 Pediatric",
+//     Age < 35,  "18-34 Young Adult",
+//     Age < 50,  "35-49 Adult",
+//     Age < 65,  "50-64 Older Adult",
+//     Age >= 65, "65+ Elderly",
+//     "Unknown"
+//   )
+// | summarize Events = count() by Age_Band
+// | order by Age_Band asc
+// | render barchart with (
+//     title="Patient Age Distribution (30d)",
+//     xtitle="Age Group",
+//     ytitle="Events"
+// )

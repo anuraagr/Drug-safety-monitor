@@ -1,0 +1,35 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 10: Patient Age Distribution — Horizontal bar chart
+// Visualization: Bar chart (horizontal, stacked by seriousness)
+// Refresh: 120 seconds
+// ════════════════════════════════════════════════════════════════
+// Breaks patients into clinically meaningful age bands.
+// Stacked bars show serious vs non-serious per band — highlights
+// elderly over-representation in serious outcomes.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(patient_age) and patient_age_unit == "801"   // unit 801 = years
+| extend Age = todouble(patient_age)
+| where Age between (0 .. 120)
+| extend Age_Band = case(
+    Age < 18,  "0–17 Pediatric",
+    Age < 35,  "18–34 Young Adult",
+    Age < 50,  "35–49 Adult",
+    Age < 65,  "50–64 Older Adult",
+    Age >= 65, "65+ Elderly",
+    "Unknown"
+  )
+| summarize
+    Serious     = countif(is_serious),
+    Non_Serious = countif(is_serious == false)
+  by Age_Band
+| extend Total = Serious + Non_Serious
+| extend Serious_Pct = round(100.0 * Serious / Total, 1)
+| order by Age_Band asc
+| render barchart with (
+    title="Patient Age Distribution (30d)",
+    xtitle="Age Group",
+    ytitle="Events",
+    kind=stacked
+)

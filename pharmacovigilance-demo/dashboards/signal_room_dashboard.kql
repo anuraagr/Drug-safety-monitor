@@ -1,0 +1,468 @@
+// ============================================================================
+// Drug Safety Signal Monitor — Real-Time Dashboard KQL Queries
+// ============================================================================
+// These queries power the Fabric Real-Time Intelligence (RTI) dashboard tiles.
+//
+// To create the dashboard in Fabric:
+//   1. Navigate to your workspace → New → Real-Time Dashboard
+//   2. Connect the dashboard to your Eventhouse (DrugSafetyDB)
+//   3. Add tiles using the queries below (one tile per section)
+//   4. Set each tile's auto-refresh interval to 30 seconds
+//
+// Tile numbering below matches the architecture specification.
+// ============================================================================
+
+
+// ============================================================================
+// TILE 1: Live Event Count (Last 24 Hours)
+// ============================================================================
+// Visualization: Stat / Big number card
+// Shows total events ingested in the last 24 hours, plus a breakdown
+// of serious vs. non-serious for quick triage context.
+// Auto-refresh: 30 seconds
+
+// --- Tile 1a: Total events (big number) ---
+AdverseEvents
+| where ingest_timestamp > ago(24h)
+| summarize
+    total_events   = count(),
+    serious_events = countif(is_serious),
+    non_serious    = countif(is_serious == false)
+| extend serious_pct = round(100.0 * serious_events / total_events, 1)
+
+
+// --- Tile 1b: Hourly event arrival rate (area chart underneath) ---
+AdverseEvents
+| where ingest_timestamp > ago(24h)
+| summarize event_count = count() by bin(ingest_timestamp, 1h)
+| order by ingest_timestamp asc
+| render areachart with (
+    title="Event Arrival Rate (Hourly)",
+    xtitle="Time",
+    ytitle="Events"
+)
+
+
+// ============================================================================
+// TILE 2: Top 5 Serious Reactions (Hospitalization / Death) — Bar Chart
+// ============================================================================
+// Visualization: Bar chart (horizontal)
+// Filters to serious outcomes only and ranks the top 5 adverse reactions
+// by frequency. Color-coded by outcome severity.
+// Auto-refresh: 30 seconds
+
+AdverseEvents
+| where ingest_timestamp > ago(24h)
+| where is_serious == true
+| where isnotempty(primary_reaction)
+| summarize
+    total          = count(),
+    hospitalizations = countif(hospitalization),
+    deaths         = countif(death),
+    life_threat    = countif(life_threatening)
+  by primary_reaction
+| top 5 by total desc
+| extend severity_label = case(
+    deaths > 0,           strcat("Deaths: ", tostring(deaths)),
+    hospitalizations > 0, strcat("Hosp: ", tostring(hospitalizations)),
+    "Other Serious"
+)
+| project primary_reaction, total, hospitalizations, deaths, life_threat, severity_label
+| order by total desc
+| render barchart with (
+    title="Top 5 Serious Adverse Reactions (24h)",
+    xtitle="Reaction (MedDRA PT)",
+    ytitle="Event Count",
+    kind=unstacked
+)
+
+
+// ============================================================================
+// TILE 3: Geographic Heatmap of Adverse Events
+// ============================================================================
+// Visualization: Map (geographic heatmap)
+// Aggregates events by country and displays on a world map.
+// Fabric RTI dashboards support map tiles with country-level aggregation.
+// Auto-refresh: 60 seconds
+
+AdverseEvents
+| where ingest_timestamp > ago(7d)
+| where isnotempty(country)
+| summarize
+    event_count    = count(),
+    serious_count  = countif(is_serious),
+    death_count    = countif(death)
+  by country
+| extend serious_pct = round(100.0 * serious_count / event_count, 1)
+| order by event_count desc
+| render piechart with (
+    title="Adverse Events by Country (7 days)"
+)
+// NOTE: In the Fabric RTI dashboard tile editor, select "Map" visualization
+// and map the 'country' column to the Location field. The piechart render
+// is a fallback for KQL query editor preview. The RTI dashboard map tile
+// handles geographic rendering natively.
+
+
+// ============================================================================
+// TILE 4: Spike Alert Table — Signal Detection
+// ============================================================================
+// Visualization: Table
+// Shows drug+reaction combinations where recent event volume significantly
+// exceeds the historical baseline (spike ratio ≥ 2.0×).
+// This tile acts as the primary "alert dashboard" for safety officers.
+// Auto-refresh: 30 seconds
+
+// Call the stored signal detection function (created in setup_eventhouse.kql)
+DetectSafetySignals(2.0, 5)
+| project
+    Signal_Severity     = signal_severity,
+    Drug                = generic_name,
+    Reaction            = primary_reaction,
+    ["7-Day Count"]     = recent_7d_count,
+    ["30-Day Baseline"] = baseline_30d_count,
+    ["Expected (7d)"]   = expected_7d_count,
+    ["Spike Ratio"]     = spike_ratio,
+    Deaths              = recent_deaths,
+    Hospitalizations    = recent_hospitalizations,
+    ["Latest Event"]    = latest_event
+| order by ["Spike Ratio"] desc
+
+
+// --- Tile 4b: Inline spike detection (if stored function is not yet deployed) ---
+// Use this query directly if you haven't created the DetectSafetySignals function.
+let recent_window = 7d;
+let baseline_window = 30d;
+let spike_multiplier = 2.0;
+let min_events = 5;
+let recent =
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(recent_window)
+    | summarize recent_count = count(),
+                recent_hosp  = countif(hospitalization),
+                recent_death = countif(death),
+                latest_event = max(ingest_timestamp)
+      by generic_name, primary_reaction;
+let baseline =
+    AdverseEvents
+    | where is_serious == true
+    | where ingest_timestamp > ago(baseline_window)
+    | summarize baseline_count = count()
+      by generic_name, primary_reaction;
+recent
+| join kind=inner baseline on generic_name, primary_reaction
+| extend expected_7d = (todouble(baseline_count) / 30.0) * 7.0
+| extend spike_ratio = iff(expected_7d > 0, todouble(recent_count) / expected_7d, 0.0)
+| where recent_count >= min_events
+| where spike_ratio >= spike_multiplier
+| project
+    Drug            = generic_name,
+    Reaction        = primary_reaction,
+    Recent_7d       = recent_count,
+    Baseline_30d    = baseline_count,
+    Expected_7d     = round(expected_7d, 1),
+    Spike_Ratio     = round(spike_ratio, 2),
+    Deaths          = recent_death,
+    Hospitalizations = recent_hosp,
+    Latest_Event    = latest_event,
+    Severity        = case(
+        recent_death > 0, "🔴 CRITICAL",
+        recent_hosp > 0,  "🟠 HIGH",
+        "🟡 MEDIUM"
+    )
+| order by Spike_Ratio desc
+
+
+// ============================================================================
+// TILE 5: Trend Line — Events Over Time (30-Day Moving Average)
+// ============================================================================
+// Visualization: Line chart (dual axis)
+// Shows daily event counts with a 30-day moving average overlay.
+// Helps safety officers identify emerging trends before they become signals.
+// Auto-refresh: 60 seconds
+
+// --- Uses the DailyEventSummary materialized view for efficiency ---
+DailyEventSummary
+| where event_date > ago(90d)
+| order by event_date asc
+| extend moving_avg_30d = avg_of(
+    // KQL series_fir or explicit window calculation
+    // Using row_window_session for simplicity in RTI dashboard
+    total_events, prev(total_events, 1), prev(total_events, 2),
+    prev(total_events, 3), prev(total_events, 4)
+) / 5.0
+| project event_date, total_events, serious_events, moving_avg_30d
+| render linechart with (
+    title="Adverse Event Trend (90 days)",
+    xtitle="Date",
+    ytitle="Event Count"
+)
+
+// --- Tile 5b: More accurate moving average using series functions ---
+// This version calculates a true 30-day moving average using make-series.
+AdverseEvents
+| where ingest_timestamp > ago(120d)
+| make-series
+    event_count = count(),
+    serious_count = countif(is_serious)
+    on ingest_timestamp
+    step 1d
+| extend moving_avg = series_fir(event_count, repeat(1, 30), true, true)
+| mv-expand
+    ingest_timestamp to typeof(datetime),
+    event_count to typeof(long),
+    serious_count to typeof(long),
+    moving_avg to typeof(double)
+| where ingest_timestamp > ago(90d)
+| project
+    Date           = ingest_timestamp,
+    Daily_Events   = event_count,
+    Serious_Events = serious_count,
+    Moving_Avg_30d = round(moving_avg, 1)
+| render linechart with (
+    title="Adverse Events — 30-Day Moving Average",
+    xtitle="Date",
+    ytitle="Events",
+    legend=visible
+)
+
+
+// ============================================================================
+// BONUS TILE: Drug Portfolio Overview
+// ============================================================================
+// Visualization: Multi-row card / Table
+// Summary of all monitored drugs with key safety metrics.
+// Useful when customer wants to see their entire therapeutic portfolio.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(generic_name)
+| summarize
+    total_events        = count(),
+    serious_events      = countif(is_serious),
+    hospitalizations    = countif(hospitalization),
+    deaths              = countif(death),
+    distinct_reactions  = dcount(primary_reaction),
+    latest_report       = max(ingest_timestamp),
+    countries_affected  = dcount(country)
+  by generic_name
+| extend serious_pct = round(100.0 * serious_events / total_events, 1)
+| order by serious_events desc
+| project
+    Drug               = generic_name,
+    ["Total Events"]   = total_events,
+    ["Serious"]        = serious_events,
+    ["Serious %"]      = serious_pct,
+    ["Hospitalizations"] = hospitalizations,
+    ["Deaths"]         = deaths,
+    ["Unique Reactions"] = distinct_reactions,
+    ["Countries"]      = countries_affected,
+    ["Latest Report"]  = latest_report
+
+
+// ============================================================================
+// BONUS TILE: Case Drill-Down Query
+// ============================================================================
+// Visualization: Table (used from "Review Case Narratives" button in alerts)
+// Parameterized query to drill into individual case reports for a specific
+// drug+reaction combination flagged by signal detection.
+//
+// In the RTI dashboard, set up parameters:
+//   @drug_name   (string, default="aspirin")
+//   @reaction    (string, default="")
+//   @time_range  (timespan, default=7d)
+
+// Replace parameters with actual values or use dashboard parameter binding:
+let target_drug = "aspirin";     // @drug_name
+let target_reaction = "";         // @reaction (empty = all reactions)
+let time_range = 7d;              // @time_range
+AdverseEvents
+| where ingest_timestamp > ago(time_range)
+| where generic_name =~ target_drug
+| where isempty(target_reaction) or primary_reaction =~ target_reaction
+| project
+    ingest_timestamp,
+    safety_report_id,
+    generic_name,
+    brand_name,
+    primary_reaction,
+    reaction_terms,
+    is_serious,
+    hospitalization,
+    death,
+    patient_age,
+    patient_sex = case(patient_sex == "1", "Male", patient_sex == "2", "Female", "Unknown"),
+    country,
+    drug_indication,
+    drug_route
+| order by ingest_timestamp desc
+| take 100
+
+
+// ============================================================================
+// TILE 10: Patient Age Distribution — Horizontal Bar Chart (Stacked)
+// ============================================================================
+// Visualization: Bar chart (horizontal, stacked by seriousness)
+// Breaks patients into clinically meaningful age bands.
+// Highlights elderly over-representation in serious outcomes.
+// Auto-refresh: 120 seconds
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(patient_age) and patient_age_unit == "801"
+| extend Age = todouble(patient_age)
+| where Age between (0 .. 120)
+| extend Age_Band = case(
+    Age < 18,  "0–17 Pediatric",
+    Age < 35,  "18–34 Young Adult",
+    Age < 50,  "35–49 Adult",
+    Age < 65,  "50–64 Older Adult",
+    Age >= 65, "65+ Elderly",
+    "Unknown"
+  )
+| summarize
+    Serious     = countif(is_serious),
+    Non_Serious = countif(is_serious == false)
+  by Age_Band
+| extend Total = Serious + Non_Serious
+| extend Serious_Pct = round(100.0 * Serious / Total, 1)
+| order by Age_Band asc
+| render barchart with (
+    title="Patient Age Distribution (30d)",
+    xtitle="Age Group",
+    ytitle="Events",
+    kind=stacked
+)
+
+
+// ============================================================================
+// TILE 11: Seriousness Outcome Funnel
+// ============================================================================
+// Visualization: Bar chart (horizontal) or Funnel chart
+// Shows the cascade from total events → serious → hospitalization →
+// life-threatening → death. Powerful visual for executives.
+// Auto-refresh: 60 seconds
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| summarize
+    Total_Events     = count(),
+    Serious          = countif(is_serious),
+    Hospitalizations = countif(hospitalization),
+    Life_Threatening = countif(life_threatening),
+    Disabilities     = countif(disability),
+    Deaths           = countif(death)
+| project
+    pack_array(
+        pack("Stage", "1. Total Events",     "Count", Total_Events),
+        pack("Stage", "2. Serious",          "Count", Serious),
+        pack("Stage", "3. Hospitalization",  "Count", Hospitalizations),
+        pack("Stage", "4. Life-Threatening", "Count", Life_Threatening),
+        pack("Stage", "5. Disability",       "Count", Disabilities),
+        pack("Stage", "6. Death",            "Count", Deaths)
+    )
+| mv-expand item = Column1 to typeof(dynamic)
+| project Stage = tostring(item.Stage), Count = tolong(item.Count)
+| render barchart with (
+    title="Adverse Event Severity Funnel (30d)",
+    xtitle="Outcome Stage",
+    ytitle="Event Count"
+)
+
+
+// ============================================================================
+// TILE 12: Reporter Qualification Breakdown — Donut / Pie Chart
+// ============================================================================
+// Visualization: Pie chart or donut chart
+// Shows WHO is reporting adverse events. Physician-reported events carry
+// higher evidentiary weight. Helps audience understand data quality.
+// Auto-refresh: 120 seconds
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| extend Reporter = case(
+    qualification == "1", "Physician",
+    qualification == "2", "Pharmacist",
+    qualification == "3", "Other Health Prof.",
+    qualification == "4", "Lawyer",
+    qualification == "5", "Consumer",
+    "Not Specified"
+  )
+| summarize
+    Events         = count(),
+    Serious_Events = countif(is_serious),
+    Deaths         = countif(death)
+  by Reporter
+| extend Serious_Pct = round(100.0 * Serious_Events / Events, 1)
+| order by Events desc
+| render piechart with (
+    title="Reports by Source Qualification (30d)",
+    legend=visible
+)
+
+
+// ============================================================================
+// TILE 13: Drug × Reaction Cross-Tab — Pivot Table / Heatmap
+// ============================================================================
+// Visualization: Table with conditional formatting (heat colors)
+// Top 8 drugs vs top 8 reactions with event counts at each intersection.
+// Apply "Heatmap" conditional formatting in the dashboard editor.
+// Auto-refresh: 60 seconds
+
+let top_drugs = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious and isnotempty(generic_name)
+    | summarize c = count() by generic_name
+    | top 8 by c desc
+    | project generic_name;
+let top_reactions = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious and isnotempty(primary_reaction)
+    | summarize c = count() by primary_reaction
+    | top 8 by c desc
+    | project primary_reaction;
+AdverseEvents
+| where ingest_timestamp > ago(30d) and is_serious
+| where generic_name in (top_drugs) and primary_reaction in (top_reactions)
+| summarize Events = count() by Drug = generic_name, Reaction = primary_reaction
+| evaluate pivot(Reaction, sum(Events), Drug)
+| order by Drug asc
+
+
+// ============================================================================
+// TILE 14: Signal Timeline — Annotated Time Chart
+// ============================================================================
+// Visualization: Line chart with anomaly markers
+// Daily serious events vs 7-day rolling average. Days exceeding 2× the
+// average are marked as SPIKE anomalies. The "story arc" tile.
+// Auto-refresh: 60 seconds
+
+let daily = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious
+    | summarize Daily = count() by Day = bin(ingest_timestamp, 1d)
+    | order by Day asc;
+let baseline = daily
+    | serialize
+    | extend Roll_7d = row_window_session(Daily, 7d, 7d)
+    | project Day, Daily;
+daily
+| join kind=leftouter (
+    daily
+    | serialize
+    | extend idx = row_number()
+    | extend Avg_7d = avg_of(
+          Daily,
+          prev(Daily, 1), prev(Daily, 2), prev(Daily, 3),
+          prev(Daily, 4), prev(Daily, 5), prev(Daily, 6)
+      )
+    | project Day, Avg_7d
+) on Day
+| extend
+    Threshold = round(Avg_7d * 2.0, 0),
+    Is_Anomaly = iff(Daily > Avg_7d * 2.0, "SPIKE", "")
+| project Day, Daily_Serious = Daily, Rolling_Avg_7d = round(Avg_7d, 1), Threshold, Is_Anomaly
+| render linechart with (
+    title="Serious Events vs 7-Day Average — Spike Detection (30d)",
+    xtitle="Date",
+    ytitle="Serious Events / Day",
+    legend=visible
+)

@@ -1,0 +1,86 @@
+{
+    "// DESCRIPTION": "Customer-parameterizable configuration for the Drug Safety Signal Monitor demo.",
+    "// INSTRUCTIONS": "Update these values to match the customer's therapeutic area, drug portfolio, and Fabric environment.",
+
+    "drug_filter": {
+        "generic_name": "aspirin",
+        "brand_name": "",
+        "therapeutic_area": "cardiology",
+        "description": "Primary drug to monitor (used by single-drug ingestion script). Use openFDA generic_name or brand_name fields."
+    },
+
+    "drug_portfolio": {
+        "profile": "mixed",
+        "description": "Portfolio profile for multi-drug fetch. Options: mixed, cardiology, oncology, immunology. Or use --drugs CLI flag for custom list.",
+        "target_count": 2000,
+        "spike_drug": "aspirin",
+        "spike_description": "Drug that will have a clustered 48h event spike to trigger DetectSafetySignals()"
+    },
+
+    "openfda_api": {
+        "base_url": "https://api.fda.gov/drug/event.json",
+        "api_key": "",
+        "rate_limit_per_minute": 40,
+        "rate_limit_with_key_per_minute": 240,
+        "max_records_per_request": 100,
+        "date_range_start": "20200101",
+        "date_range_end": "20260101",
+        "description": "Register for a free API key at https://open.fda.gov/apis/authentication/ to increase rate limits."
+    },
+
+    "fabric_eventhub": {
+        "connection_string": "<YOUR_FABRIC_EVENTSTREAM_CONNECTION_STRING>",
+        "eventhub_name": "faers-adverse-events",
+        "description": "Connection string from Fabric Eventstream 'Custom endpoint' source. Navigate to Eventstream > Sources > Custom endpoint > Keys."
+    },
+
+    "fabric_eventhouse": {
+        "cluster_uri": "https://trd-yxvwsau7zstjcxcq7h.z0.kusto.fabric.microsoft.com",
+        "database_name": "Drug-safety-signal-eh",
+        "table_name": "AdverseEvents",
+        "description": "Eventhouse KQL database URI from Fabric workspace > Eventhouse > Query URI. Find it at: Workspace > Eventhouse > hover > Copy Query URI."
+    },
+
+    "signal_detection": {
+        "spike_threshold_multiplier": 2.0,
+        "rolling_window_days": 30,
+        "comparison_window_days": 7,
+        "minimum_event_count": 3,
+        "serious_outcomes": [
+            "hospitalization",
+            "death",
+            "life_threatening",
+            "disability",
+            "congenital_anomaly",
+            "required_intervention"
+        ],
+        "description": "A signal is raised when the current 7-day count exceeds (spike_threshold_multiplier × 30-day rolling average) AND meets minimum_event_count. Lowered min to 3 for demo visibility."
+    },
+
+    "alerting": {
+        "teams_webhook_url": "<YOUR_TEAMS_WEBHOOK_URL>",
+        "email_recipients": [
+            "pv-safety@contoso.com",
+            "drug-safety-lead@contoso.com"
+        ],
+        "alert_cooldown_minutes": 60,
+        "description": "Activator will send alerts via Teams adaptive card and email. Set cooldown to avoid alert fatigue."
+    },
+
+    "streaming": {
+        "batch_size": 50,
+        "batch_interval_seconds": 5,
+        "max_payload_bytes": 1000000,
+        "simulate_realtime": true,
+        "simulation_speed_multiplier": 10,
+        "description": "Fabric Eventstream sample events must be <1MB. simulate_realtime=true replays historical data with injected ISO 8601 timestamps."
+    },
+
+    "dashboard": {
+        "refresh_interval_seconds": 30,
+        "time_range_hours": 24,
+        "trend_days": 30,
+        "top_n_reactions": 10,
+        "description": "Default parameters for Real-Time Dashboard tiles. Changed to 30d trend for demo data window and top 10 reactions for richer visuals."
+    }
+}

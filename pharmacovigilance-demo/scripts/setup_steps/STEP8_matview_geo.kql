@@ -1,0 +1,13 @@
+// STEP 8: Materialized View — Geographic Distribution
+// Select ALL text below and click Run
+
+.create-or-alter materialized-view with (backfill=true) EventsByCountry on table AdverseEvents
+{
+    AdverseEvents
+    | where isnotempty(country)
+    | summarize
+        total_events   = count(),
+        serious_events = countif(is_serious),
+        death_count    = countif(death)
+      by country
+}

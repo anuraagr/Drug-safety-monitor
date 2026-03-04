@@ -1,0 +1,32 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 9: Case Detail Drilldown — Latest serious cases
+// Visualization: Table (scrollable)
+// Refresh: 30 seconds
+// ════════════════════════════════════════════════════════════════
+
+AdverseEvents
+| where ingest_timestamp > ago(7d)
+| where is_serious == true
+| project
+    Received     = format_datetime(ingest_timestamp, "MM/dd HH:mm"),
+    Case_ID      = safety_report_id,
+    Drug         = generic_name,
+    Reaction     = primary_reaction,
+    Outcome      = case(
+        death == true,              "💀 Death",
+        life_threatening == true,   "⚠️ Life-Threat",
+        hospitalization == true,    "🏥 Hospitalized",
+        disability == true,         "♿ Disability",
+        "⚡ Other Serious"
+    ),
+    Country      = country,
+    Sex          = case(
+        patient_sex == "1", "M",
+        patient_sex == "2", "F",
+        "—"
+    ),
+    Age          = iif(isnotempty(patient_age) and patient_age_unit == "801",
+                       strcat(patient_age, "y"), "—"),
+    Source       = sender_organization
+| order by Received desc
+| take 50

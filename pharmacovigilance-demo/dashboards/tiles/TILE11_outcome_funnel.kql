@@ -1,0 +1,34 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 11: Seriousness Outcome Funnel — Funnel / stacked bar
+// Visualization: Bar chart (horizontal) or Funnel chart
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+// Shows the cascade from total events → serious → hospitalization →
+// life-threatening → death. Powerful visual for executives who want
+// to see how adverse events escalate in severity.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| summarize
+    Total_Events     = count(),
+    Serious          = countif(is_serious),
+    Hospitalizations = countif(hospitalization),
+    Life_Threatening = countif(life_threatening),
+    Disabilities     = countif(disability),
+    Deaths           = countif(death)
+| project
+    pack_array(
+        pack("Stage", "1. Total Events",     "Count", Total_Events),
+        pack("Stage", "2. Serious",          "Count", Serious),
+        pack("Stage", "3. Hospitalization",  "Count", Hospitalizations),
+        pack("Stage", "4. Life-Threatening", "Count", Life_Threatening),
+        pack("Stage", "5. Disability",       "Count", Disabilities),
+        pack("Stage", "6. Death",            "Count", Deaths)
+    )
+| mv-expand item = Column1 to typeof(dynamic)
+| project Stage = tostring(item.Stage), Count = tolong(item.Count)
+| render barchart with (
+    title="Adverse Event Severity Funnel (30d)",
+    xtitle="Outcome Stage",
+    ytitle="Event Count"
+)

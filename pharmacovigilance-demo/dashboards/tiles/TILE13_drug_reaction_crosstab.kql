@@ -1,0 +1,27 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 13: Drug × Reaction Cross-Tab — Pivot table / heatmap
+// Visualization: Table with conditional formatting (heat colors)
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+// A pivot showing the top 8 drugs vs top 8 reactions with event
+// counts at each intersection. Immediately reveals which
+// drug+reaction pairs dominate serious adverse events.
+// In the dashboard editor, apply "Heatmap" conditional formatting
+// to the numeric columns.
+
+let top_drugs = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious and isnotempty(generic_name)
+    | summarize c = count() by generic_name
+    | top 8 by c desc
+    | project generic_name;
+let top_reactions = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious and isnotempty(primary_reaction)
+    | summarize c = count() by primary_reaction
+    | top 8 by c desc
+    | project primary_reaction;
+AdverseEvents
+| where ingest_timestamp > ago(30d) and is_serious
+| where generic_name in (top_drugs) and primary_reaction in (top_reactions)
+| summarize Events = count() by Drug = generic_name, Reaction = primary_reaction
+| evaluate pivot(Reaction, sum(Events), Drug)
+| order by Drug asc

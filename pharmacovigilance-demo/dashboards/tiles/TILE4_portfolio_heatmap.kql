@@ -1,0 +1,40 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 4: Drug Portfolio Heatmap — Multi-row table
+// Visualization: Table (with data bars on Serious column)
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+// Shows all monitored drugs at a glance with their safety profiles.
+// In the RTI dashboard editor, enable "Data bars" on the Serious column.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(generic_name)
+| summarize
+    Total          = count(),
+    Serious        = countif(is_serious),
+    Deaths         = countif(death),
+    Hospitalizations = countif(hospitalization),
+    Reactions      = dcount(primary_reaction),
+    Countries      = dcount(country),
+    Latest         = max(ingest_timestamp)
+  by Drug = generic_name
+| extend
+    Serious_Rate = strcat(tostring(round(100.0 * Serious / Total, 0)), "%"),
+    Risk_Level = case(
+        Deaths > 5,                 "🔴 Critical",
+        Deaths > 0 or Serious > 50, "🟠 High",
+        Serious > 20,               "🟡 Elevated",
+        "🟢 Normal"
+    )
+| project
+    Risk_Level,
+    Drug,
+    Total,
+    Serious,
+    Serious_Rate,
+    Deaths,
+    Hospitalizations,
+    Reactions,
+    Countries,
+    Latest = format_datetime(Latest, "MM/dd HH:mm")
+| order by Deaths desc, Serious desc

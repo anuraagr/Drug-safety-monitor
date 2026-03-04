@@ -1,0 +1,199 @@
+{
+    "// DESCRIPTION": "Fabric Activator alert rule for detecting adverse event safety signal spikes. Deploy this configuration in the Activator item within your Fabric workspace.",
+
+    "activator_rule": {
+        "name": "Drug Safety Signal Spike Alert",
+        "description": "Triggers when a drug+reaction combination shows a serious adverse event count exceeding 2× the 30-day rolling average within the past 24 hours. Targets hospitalization and death outcomes for regulatory-critical escalation.",
+
+        "data_source": {
+            "type": "KQL Database",
+            "workspace": "<YOUR_FABRIC_WORKSPACE>",
+            "eventhouse": "DrugSafetyEventhouse",
+            "database": "DrugSafetyDB",
+            "description": "Connect Activator to the Eventhouse KQL database containing the AdverseEvents table and materialized views."
+        },
+
+        "trigger": {
+            "type": "Kusto Query",
+            "description": "This KQL query runs on the configured schedule and returns rows that represent active safety signals. Each returned row triggers an alert action.",
+
+            "query": "// Detect safety signal spikes: 7-day count > 2× expected from 30-day baseline\nlet spike_multiplier = 2.0;\nlet min_event_count = 5;\nlet recent =\n    AdverseEvents\n    | where is_serious == true\n    | where ingest_timestamp > ago(7d)\n    | summarize\n        recent_count = count(),\n        recent_hosp  = countif(hospitalization),\n        recent_death = countif(death),\n        latest_event = max(ingest_timestamp)\n      by generic_name, primary_reaction;\nlet baseline =\n    AdverseEvents\n    | where is_serious == true\n    | where ingest_timestamp > ago(30d)\n    | summarize baseline_count = count()\n      by generic_name, primary_reaction;\nrecent\n| join kind=inner baseline on generic_name, primary_reaction\n| extend expected_7d = (todouble(baseline_count) / 30.0) * 7.0\n| extend spike_ratio = iff(expected_7d > 0, todouble(recent_count) / expected_7d, 0.0)\n| where recent_count >= min_event_count\n| where spike_ratio >= spike_multiplier\n| project\n    generic_name,\n    primary_reaction,\n    recent_count,\n    baseline_count,\n    expected_7d = round(expected_7d, 1),\n    spike_ratio = round(spike_ratio, 2),\n    recent_death,\n    recent_hosp,\n    latest_event,\n    severity = case(\n        recent_death > 0, \"CRITICAL\",\n        recent_hosp > 0,  \"HIGH\",\n        \"MEDIUM\"\n    )\n| order by spike_ratio desc",
+
+            "evaluation_schedule": {
+                "frequency": "hourly",
+                "interval_minutes": 60,
+                "description": "Evaluates every 60 minutes. Adjust to 15-minute intervals for higher sensitivity during active monitoring periods."
+            },
+
+            "condition": {
+                "type": "row_count_greater_than",
+                "threshold": 0,
+                "description": "Alert fires when the query returns one or more rows (i.e., at least one drug+reaction combination exceeds the spike threshold)."
+            }
+        },
+
+        "cooldown": {
+            "minutes": 60,
+            "description": "Suppress duplicate alerts for the same signal within this window to prevent alert fatigue. In Activator, configure this under 'Snooze duration'."
+        },
+
+        "actions": [
+            {
+                "type": "Teams Adaptive Card",
+                "description": "Sends a rich adaptive card to a Teams channel with signal details, severity, and a drill-down action button.",
+                "target": {
+                    "teams_webhook_url": "<YOUR_TEAMS_WEBHOOK_URL>",
+                    "channel_description": "Post to #drug-safety-alerts or equivalent PV operations channel."
+                },
+                "adaptive_card_template": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.5",
+                    "body": [
+                        {
+                            "type": "ColumnSet",
+                            "columns": [
+                                {
+                                    "type": "Column",
+                                    "width": "auto",
+                                    "items": [
+                                        {
+                                            "type": "Image",
+                                            "url": "https://img.icons8.com/color/48/warning-shield.png",
+                                            "size": "Small"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "Column",
+                                    "width": "stretch",
+                                    "items": [
+                                        {
+                                            "type": "TextBlock",
+                                            "text": "⚠️ Drug Safety Signal Detected",
+                                            "weight": "Bolder",
+                                            "size": "Large",
+                                            "color": "Attention"
+                                        },
+                                        {
+                                            "type": "TextBlock",
+                                            "text": "Fabric Real-Time Intelligence — Pharmacovigilance Monitor",
+                                            "size": "Small",
+                                            "isSubtle": true,
+                                            "spacing": "None"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "Container",
+                            "style": "emphasis",
+                            "items": [
+                                {
+                                    "type": "FactSet",
+                                    "facts": [
+                                        {
+                                            "title": "Severity",
+                                            "value": "${severity}"
+                                        },
+                                        {
+                                            "title": "Drug",
+                                            "value": "${generic_name}"
+                                        },
+                                        {
+                                            "title": "Reaction",
+                                            "value": "${primary_reaction}"
+                                        },
+                                        {
+                                            "title": "7-Day Event Count",
+                                            "value": "${recent_count}"
+                                        },
+                                        {
+                                            "title": "30-Day Baseline",
+                                            "value": "${baseline_count}"
+                                        },
+                                        {
+                                            "title": "Expected (7d)",
+                                            "value": "${expected_7d}"
+                                        },
+                                        {
+                                            "title": "Spike Ratio",
+                                            "value": "${spike_ratio}×"
+                                        },
+                                        {
+                                            "title": "Deaths (7d)",
+                                            "value": "${recent_death}"
+                                        },
+                                        {
+                                            "title": "Hospitalizations (7d)",
+                                            "value": "${recent_hosp}"
+                                        },
+                                        {
+                                            "title": "Latest Event",
+                                            "value": "${latest_event}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "**Recommended Action:** Review individual case narratives in Eventhouse and assess whether a regulatory filing (IND Safety Report / CIOMS) is required.",
+                            "wrap": true,
+                            "spacing": "Medium"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "type": "Action.OpenUrl",
+                            "title": "🔍 Review Case Narratives",
+                            "url": "https://app.fabric.microsoft.com/groups/<WORKSPACE_ID>/eventhouse?query=AdverseEvents%20%7C%20where%20generic_name%20%3D%3D%20%22${generic_name}%22%20%7C%20where%20primary_reaction%20%3D%3D%20%22${primary_reaction}%22%20%7C%20where%20ingest_timestamp%20%3E%20ago(7d)%20%7C%20order%20by%20ingest_timestamp%20desc",
+                            "tooltip": "Open drill-down query in Fabric Eventhouse"
+                        },
+                        {
+                            "type": "Action.OpenUrl",
+                            "title": "📊 Open Signal Dashboard",
+                            "url": "https://app.fabric.microsoft.com/groups/<WORKSPACE_ID>/dashboards/<DASHBOARD_ID>",
+                            "tooltip": "Open the Real-Time Signal Room Dashboard"
+                        },
+                        {
+                            "type": "Action.OpenUrl",
+                            "title": "📋 Log in Safety Database",
+                            "url": "https://your-safety-database.contoso.com/new-signal?drug=${generic_name}&reaction=${primary_reaction}",
+                            "tooltip": "Create a new signal entry in your PV safety database"
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "Email",
+                "description": "Sends an email notification to the PV safety team with signal summary.",
+                "target": {
+                    "recipients": [
+                        "pv-safety@contoso.com",
+                        "drug-safety-lead@contoso.com"
+                    ],
+                    "description": "Update recipients in config.json > alerting.email_recipients"
+                },
+                "email_template": {
+                    "subject": "[${severity}] Drug Safety Signal: ${generic_name} — ${primary_reaction}",
+                    "body_html": "<h2>⚠️ Safety Signal Detected</h2><table border='1' cellpadding='8' style='border-collapse:collapse;font-family:Segoe UI,sans-serif'><tr><th>Field</th><th>Value</th></tr><tr><td><b>Drug</b></td><td>${generic_name}</td></tr><tr><td><b>Reaction</b></td><td>${primary_reaction}</td></tr><tr><td><b>Severity</b></td><td>${severity}</td></tr><tr><td><b>7-Day Count</b></td><td>${recent_count}</td></tr><tr><td><b>30-Day Baseline</b></td><td>${baseline_count}</td></tr><tr><td><b>Spike Ratio</b></td><td>${spike_ratio}×</td></tr><tr><td><b>Deaths</b></td><td>${recent_death}</td></tr><tr><td><b>Hospitalizations</b></td><td>${recent_hosp}</td></tr></table><br/><p><b>Next Steps:</b> Review case narratives and determine if regulatory action is required.</p><p><a href='https://app.fabric.microsoft.com/groups/<WORKSPACE_ID>/eventhouse'>Open Eventhouse</a> | <a href='https://app.fabric.microsoft.com/groups/<WORKSPACE_ID>/dashboards/<DASHBOARD_ID>'>Open Dashboard</a></p>"
+                }
+            }
+        ]
+    },
+
+    "setup_instructions": {
+        "step_1": "In your Fabric workspace, create a new Activator item: New → Activator.",
+        "step_2": "Select 'Eventhouse' as the data source and connect to DrugSafetyDB.",
+        "step_3": "Choose 'Start monitoring' and paste the trigger KQL query from activator_rule.trigger.query above.",
+        "step_4": "Configure the evaluation schedule (default: every 60 minutes).",
+        "step_5": "Set the condition: 'When query returns rows' (row count > 0).",
+        "step_6": "Add Action 1: Teams — paste the Teams webhook URL and the adaptive card JSON template.",
+        "step_7": "Add Action 2: Email — configure recipients and paste the email template.",
+        "step_8": "Set snooze/cooldown duration to 60 minutes.",
+        "step_9": "Activate and test with: AdverseEvents | take 1 (verify data flows).",
+        "step_10": "For production: Adjust spike_multiplier, min_event_count, and schedule as needed."
+    }
+}

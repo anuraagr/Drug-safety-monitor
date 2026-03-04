@@ -1,0 +1,73 @@
+// ============================================================================
+// STEP 15: Function — Risk Score Card
+// ============================================================================
+// Generates a composite risk score (0-100) for a single drug based on
+// seriousness rate, death rate, reporting velocity, and signal spike ratio.
+// Designed for executive-level "how risky is this drug" conversations.
+//
+// Usage:  RiskScoreCard("aspirin")
+
+.create-or-alter function with (folder="SignalDetection", docstring="Composite pharmacovigilance risk score for a drug")
+RiskScoreCard(drug_generic_name: string)
+{
+    let stats = AdverseEvents
+        | where ingest_timestamp > ago(90d)
+        | where generic_name =~ drug_generic_name
+        | summarize
+            total         = count(),
+            serious       = countif(is_serious),
+            deaths        = countif(death),
+            hosp          = countif(hospitalization),
+            lt            = countif(life_threatening),
+            reactions     = dcount(primary_reaction),
+            countries     = dcount(country),
+            latest        = max(ingest_timestamp),
+            recent_7d     = countif(ingest_timestamp > ago(7d)),
+            recent_30d    = countif(ingest_timestamp > ago(30d));
+    let signals = DetectSafetySignals(2.0, 3)
+        | where generic_name =~ drug_generic_name
+        | summarize
+            active_signals = count(),
+            max_spike      = max(spike_ratio)
+        ;
+    stats
+    | extend
+        // Component scores (0-100 each), weighted
+        seriousness_score = round(todouble(serious) / total * 100.0, 1),
+        mortality_score   = round(iff(total > 0, todouble(deaths) / total * 1000.0, 0.0), 1),  // per-mille, capped at 100
+        velocity_score    = round(iff(recent_30d > 0, todouble(recent_7d) / recent_30d * 100.0 * (30.0/7.0), 0.0), 1),
+        breadth_score     = round(todouble(reactions) * 2.0, 1)  // diversity of reactions
+    | extend
+        mortality_score = iff(mortality_score > 100, 100.0, mortality_score),
+        velocity_score  = iff(velocity_score > 100, 100.0, velocity_score),
+        breadth_score   = iff(breadth_score > 100, 100.0, breadth_score)
+    | extend
+        composite_risk = round(
+            seriousness_score * 0.30 +
+            mortality_score   * 0.30 +
+            velocity_score    * 0.25 +
+            breadth_score     * 0.15
+        , 1)
+    | extend
+        risk_level = case(
+            composite_risk >= 70, "🔴 CRITICAL",
+            composite_risk >= 50, "🟠 HIGH",
+            composite_risk >= 30, "🟡 ELEVATED",
+            "🟢 NORMAL"
+        )
+    | project
+        Drug           = drug_generic_name,
+        Risk_Level     = risk_level,
+        Composite_Score = composite_risk,
+        Seriousness_Pct = seriousness_score,
+        Mortality_Per1k = mortality_score,
+        Velocity_Score  = velocity_score,
+        Reaction_Breadth = breadth_score,
+        Total_Events_90d = total,
+        Deaths           = deaths,
+        Hospitalizations = hosp,
+        Active_Reactions = reactions,
+        Countries        = countries,
+        Latest_Report    = latest
+    | take 1
+}

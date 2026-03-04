@@ -1,0 +1,23 @@
+Drug Safety Signal Monitor — Demo Data Summary
+==================================================
+Generated: 2026-03-02T20:48:37.242391+00:00
+Drug filter: aspirin
+Total events: 500
+Serious events: 360 (72%)
+Deaths: 55
+Hospitalizations: 202
+Unique countries: 26
+Unique reactions: 272
+Date range of ingest_timestamps: last 30 days
+
+Top 10 reactions:
+  Death: 23
+  Chronic kidney disease: 22
+  Pneumonia: 13
+  Diarrhoea: 10
+  Acute kidney injury: 9
+  Gastrointestinal haemorrhage: 9
+  Renal failure: 8
+  Nasopharyngitis: 7
+  Product dose omission: 7
+  Constipation: 6

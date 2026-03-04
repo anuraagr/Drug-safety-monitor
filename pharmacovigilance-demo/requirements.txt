@@ -1,0 +1,22 @@
+# Drug Safety Signal Monitor — Python Dependencies
+# Install with: pip install -r requirements.txt
+#
+# Quick install (core only):  pip install requests azure-eventhub
+# Full install (all tools):   pip install -r requirements.txt
+
+# ── Core ────────────────────────────────────────────────────────
+# HTTP client for openFDA FAERS API
+requests>=2.31.0,<3.0.0
+
+# Azure Event Hub SDK — publish events to Fabric Eventstream
+azure-eventhub>=5.11.0,<6.0.0
+
+# ── Direct Eventhouse Ingestion (load_to_eventhouse.py) ─────────
+# Uncomment these if you want to load data directly via Kusto SDK
+# rather than through Eventstream. Requires a cluster URI.
+# azure-kusto-data>=4.3.0,<5.0.0
+# azure-kusto-ingest>=4.3.0,<5.0.0
+# azure-identity>=1.15.0,<2.0.0
+
+# ── Transitive (pinned for reproducibility) ─────────────────────
+azure-core>=1.29.0,<2.0.0

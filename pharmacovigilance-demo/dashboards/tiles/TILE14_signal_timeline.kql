@@ -1,0 +1,40 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 14: Signal Timeline — Annotated time chart
+// Visualization: Line chart with anomaly markers
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+// Shows the daily count of serious events alongside the rolling
+// 7-day average. Days where the count exceeds 2× the average are
+// marked as anomalies. This is the "story arc" tile — it shows
+// the spike building over time and makes the signal tangible.
+
+let daily = AdverseEvents
+    | where ingest_timestamp > ago(30d) and is_serious
+    | summarize Daily = count() by Day = bin(ingest_timestamp, 1d)
+    | order by Day asc;
+let baseline = daily
+    | serialize
+    | extend Roll_7d = row_window_session(Daily, 7d, 7d)  // placeholder
+    | project Day, Daily;
+daily
+| join kind=leftouter (
+    daily
+    | serialize
+    | extend idx = row_number()
+    | extend Avg_7d = avg_of(
+          Daily,
+          prev(Daily, 1), prev(Daily, 2), prev(Daily, 3),
+          prev(Daily, 4), prev(Daily, 5), prev(Daily, 6)
+      )
+    | project Day, Avg_7d
+) on Day
+| extend
+    Threshold = round(Avg_7d * 2.0, 0),
+    Is_Anomaly = iff(Daily > Avg_7d * 2.0, "SPIKE", "")
+| project Day, Daily_Serious = Daily, Rolling_Avg_7d = round(Avg_7d, 1), Threshold, Is_Anomaly
+| render linechart with (
+    title="Serious Events vs 7-Day Average — Spike Detection (30d)",
+    xtitle="Date",
+    ytitle="Serious Events / Day",
+    legend=visible
+)

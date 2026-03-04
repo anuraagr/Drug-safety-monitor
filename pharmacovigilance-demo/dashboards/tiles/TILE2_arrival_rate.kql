@@ -1,0 +1,19 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 2: Event Arrival Rate — Area chart (24h, 1h bins)
+// Visualization: Area chart (stacked: serious vs non-serious)
+// Refresh: 30 seconds
+// ════════════════════════════════════════════════════════════════
+
+AdverseEvents
+| where ingest_timestamp > ago(24h)
+| summarize
+    Serious     = countif(is_serious),
+    Non_Serious = countif(is_serious == false)
+  by bin(ingest_timestamp, 1h)
+| order by ingest_timestamp asc
+| render areachart with (
+    title="Event Arrival Rate (24h)",
+    xtitle="Time",
+    ytitle="Events per Hour",
+    kind=stacked
+)

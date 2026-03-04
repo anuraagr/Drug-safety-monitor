@@ -1,0 +1,26 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 6: Geographic Distribution — Map / Pie chart
+// Visualization: Map tile (select "Map" in RTI dashboard editor)
+// Refresh: 60 seconds
+// ════════════════════════════════════════════════════════════════
+// Shows global reporting distribution. In the dashboard editor,
+// set "Location" = country, "Size" = event_count.
+
+AdverseEvents
+| where ingest_timestamp > ago(30d)
+| where isnotempty(country)
+| summarize
+    event_count    = count(),
+    serious_count  = countif(is_serious),
+    death_count    = countif(death),
+    drug_count     = dcount(generic_name)
+  by country
+| extend serious_pct = round(100.0 * serious_count / event_count, 1)
+| order by event_count desc
+| project
+    Country        = country,
+    Events         = event_count,
+    Serious        = serious_count,
+    Serious_Pct    = serious_pct,
+    Deaths         = death_count,
+    Drugs_Reported = drug_count

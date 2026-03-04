@@ -1,0 +1,26 @@
+// ════════════════════════════════════════════════════════════════
+// TILE 5: Top 10 Serious Reactions — Bar chart
+// Visualization: Horizontal bar chart (stacked by severity type)
+// Refresh: 30 seconds
+// ════════════════════════════════════════════════════════════════
+
+AdverseEvents
+| where ingest_timestamp > ago(7d)
+| where is_serious == true
+| where isnotempty(primary_reaction)
+| summarize
+    Hospitalizations = countif(hospitalization),
+    Deaths           = countif(death),
+    Life_Threatening = countif(life_threatening),
+    Other_Serious    = countif(not(hospitalization) and not(death) and not(life_threatening))
+  by Reaction = primary_reaction
+| extend Total = Hospitalizations + Deaths + Life_Threatening + Other_Serious
+| top 10 by Total desc
+| project Reaction, Deaths, Life_Threatening, Hospitalizations, Other_Serious
+| order by Deaths desc, Hospitalizations desc
+| render barchart with (
+    title="Top 10 Serious Adverse Reactions (7d)",
+    xtitle="Reaction (MedDRA PT)",
+    ytitle="Event Count",
+    kind=stacked
+)
