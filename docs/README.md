@@ -68,7 +68,7 @@ A polished, production-grade demonstration of adverse-event signal detection bui
 ## Project Structure
 
 ```
-pharmacovigilance-demo/
+Drug-safety-monitor/
 ├── scripts/
 │   ├── fetch_fda_portfolio.py    # Multi-drug openFDA fetcher (batch)
 │   ├── live_demo.py              # Real-time replay for presentations
@@ -97,12 +97,11 @@ pharmacovigilance-demo/
 ├── alerts/
 │   └── activator_rule.json
 ├── docs/
-│   ├── README.md                  # ← you are here
+│   ├── README.md                  # Detailed documentation
 │   ├── DEMO_SCRIPT.md            # 10-minute presentation walkthrough
 │   ├── DASHBOARD_LAYOUT.md       # 14-tile grid layout + presentation tips
 │   └── config.json               # Customer parameterization
 ├── sample_data/                   # Generated datasets
-├── sample_events.json             # 20-event test payload
 └── requirements.txt
 ```
 
@@ -124,7 +123,8 @@ pharmacovigilance-demo/
 ### 1. Clone & install
 
 ```bash
-cd pharmacovigilance-demo
+git clone https://github.com/anuraagr/Drug-safety-monitor.git
+cd Drug-safety-monitor
 pip install -r requirements.txt
 ```
 

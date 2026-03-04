@@ -4,11 +4,17 @@ Fix the 2 remaining KQL objects that failed during initial deployment:
 2. RiskScoreCard — 'latest' reserved keyword → renamed to 'latest_report'
 """
 import sys
+from pathlib import Path
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.identity import InteractiveBrowserCredential, SharedTokenCacheCredential, DeviceCodeCredential, ChainedTokenCredential
 
-CLUSTER = "https://trd-yxvwsau7zstjcxcq7h.z0.kusto.fabric.microsoft.com"
-DATABASE = "Drug-safety-signal-eh"
+import json
+
+_config_path = Path(__file__).resolve().parent.parent / "docs" / "config.json"
+with open(_config_path) as _f:
+    _cfg = json.load(_f)
+CLUSTER = _cfg["fabric_eventhouse"]["cluster_uri"]
+DATABASE = _cfg["fabric_eventhouse"]["database_name"]
 
 TRANSFORM_FN = """
 .create-or-alter function with (folder="Pipeline", docstring="Transforms raw staging records into enriched AdverseEvents rows")

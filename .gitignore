@@ -2,7 +2,12 @@
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+dist/
+build/
 .env
+venv/
+.venv/
 
 # IDE
 .vscode/
@@ -12,8 +17,12 @@ __pycache__/
 Thumbs.db
 .DS_Store
 
-# Logs
+# Logs & temp output
 *.log
+fix_output.txt
+
+# Archives
+*.zip
 
 # Large generated files (keep sample_data tracked via LFS or exclude)
 # sample_data/adverse_events_portfolio.json
